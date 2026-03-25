@@ -3,24 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biomas em Guerra: O Caminho da Sobrevivência</title>
+    <title>Biomas em Guerra: A Grande Trilha</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Outfit:wght@300;600;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #0a0c10;
-            --accent-invader: #ff3e3e;
-            --accent-biome: #00f2ff;
-            --path-default: rgba(255,255,255,0.1);
-            --path-active: rgba(0,242,255,0.4);
+            --bg-dark: #080a0e;
+            --accent-invader: #ff4757;
+            --accent-biome: #2ed573;
+            --path-dot: #2f3542;
+            --path-highlight: rgba(255, 255, 255, 0.4);
             
-            --color-amazon: #2aff7f;
-            --color-cerrado: #ffcc33;
-            --color-caatinga: #ff9933;
-            --color-atlantica: #00ba47;
-            --color-costao: #33ccff;
-            --color-pantanal: #3388ff;
+            --color-amazon: #2ed573;
+            --color-cerrado: #ffa502;
+            --color-caatinga: #eccc68;
+            --color-atlantica: #1e90ff;
+            --color-costao: #70a1ff;
+            --color-pantanal: #3742fa;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -31,11 +31,9 @@
             height: 100vh;
             overflow: hidden;
             display: grid;
-            grid-template-areas: 
-                "header header"
-                "board sidebar";
-            grid-template-columns: 1fr 320px;
-            grid-template-rows: 90px 1fr;
+            grid-template-areas: "header sidebar" "board sidebar";
+            grid-template-columns: 1fr 350px;
+            grid-template-rows: 100px 1fr;
         }
 
         header {
@@ -44,22 +42,14 @@
             justify-content: space-between;
             align-items: center;
             padding: 0 40px;
-            background: rgba(15,20,30,0.9);
-            border-bottom: 2px solid #222;
-            z-index: 10;
-        }
-
-        .title-area h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.3rem;
-            letter-spacing: 3px;
-            color: #fff;
+            background: rgba(0,0,0,0.5);
+            border-bottom: 2px solid #1a1a1a;
         }
 
         #game-board {
             grid-area: board;
             position: relative;
-            background: radial-gradient(circle at center, #1a202c 0%, #0a0c10 80%);
+            background: radial-gradient(circle at center, #151921 0%, #080a0e 80%);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -71,367 +61,387 @@
             grid-area: sidebar;
             background: #111;
             border-left: 2px solid #222;
-            padding: 25px;
+            padding: 30px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 25px;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
         }
 
-        .dice-container {
+        /* 3D Dice Animation */
+        .dice-box {
             background: #1a1a1a;
-            border-radius: 15px;
-            padding: 20px;
+            border-radius: 20px;
+            padding: 30px;
             text-align: center;
             border: 1px solid #333;
+            position: relative;
+            overflow: hidden;
         }
-        .dice {
-            font-size: 3rem;
-            margin: 10px 0;
-            color: #ffeb3b;
+        #dice-visual {
+            width: 80px; height: 80px;
+            background: #fff;
+            color: #000;
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 20px;
             font-family: 'Orbitron';
-            text-shadow: 0 0 15px rgba(255,235,59,0.5);
+            font-size: 2.5rem;
+            font-weight: 900;
+            box-shadow: 0 5px 20px rgba(255,255,255,0.2), inset 0 -5px 0 #ccc;
+            transition: 0.1s;
+        }
+        .rolling {
+            animation: roll 0.2s infinite linear;
+        }
+        @keyframes roll {
+            0% { transform: rotate(0deg) scale(0.9); }
+            50% { transform: rotate(180deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(0.9); }
         }
 
         .btn {
             background: #fff;
             color: #000;
             border: none;
-            padding: 15px;
-            border-radius: 10px;
+            padding: 18px;
+            border-radius: 12px;
             font-weight: 900;
             cursor: pointer;
             text-transform: uppercase;
             font-family: 'Orbitron';
+            width: 100%;
             transition: 0.3s;
         }
-        .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255,255,255,0.2); }
+        .btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(255,255,255,0.1); }
+        .btn:active { transform: translateY(0); }
         .btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
-        #log {
+        #game-log {
             flex: 1;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
             overflow-y: auto;
-            font-size: 0.8rem;
-            color: #888;
-            padding-right: 10px;
+            font-size: 0.85rem;
+            border: 1px solid #222;
         }
-        .log-msg { margin-bottom: 8px; border-left: 3px solid #444; padding-left: 8px; }
-        .log-msg.biomes { border-color: var(--accent-biome); }
-        .log-msg.invader { border-color: var(--accent-invader); }
+        .log-entry { margin-bottom: 10px; line-height: 1.4; border-left: 3px solid #444; padding-left: 10px; color: #aaa; }
+        .log-biomes { border-color: var(--accent-biome); color: #fff; }
+        .log-invader { border-color: var(--accent-invader); color: #fff; }
 
         /* SVG Space Styles */
-        .space { cursor: pointer; transition: 0.2s; }
-        .space:hover { fill-opacity: 0.5; }
-        .space-dot { fill: var(--path-default); stroke: #333; }
-        .space-biome { stroke-width: 4; }
-        .space-highlight { stroke: #fff; stroke-width: 3; fill: rgba(255,255,255,0.2); }
-        
-        .pawn { pointer-events: none; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .node { cursor: pointer; transition: 0.3s; }
+        .node:hover .node-base { fill-opacity: 0.8; }
+        .node-highlight { stroke: #fff; stroke-width: 3; stroke-dasharray: 4 2; animation: rotateLines 5s linear infinite; }
+        @keyframes rotateLines { from { stroke-dashoffset: 20; } to { stroke-dashoffset: 0; } }
 
-        #modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            display: none;
+        /* Pawn/Pião Styles */
+        .pawn { cursor: pointer; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8)); transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        .pawn:hover { transform: scale(1.2); }
+        .active-pawn { stroke: #fff; stroke-width: 4; filter: drop-shadow(0 0 15px rgba(255,255,255,0.4)); }
+
+        #victory-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000; display: none;
         }
-        .modal-card {
-            background: #111;
-            padding: 40px;
-            border-radius: 20px;
-            border: 1px solid #333;
-            max-width: 450px;
-            text-align: center;
+        .modal-content {
+            background: #111; border: 1px solid #333; padding: 50px; border-radius: 30px; text-align: center; max-width: 500px;
         }
     </style>
 </head>
 <body>
     <header>
-        <div class="title-area">
-            <h1>BIOMAS EM GUERRA</h1>
+        <div class="logo">
+            <h1 style="font-family: Orbitron; letter-spacing: 5px;">BIOMAS EM GUERRA</h1>
         </div>
-        <div id="turn-info" style="text-align: center">
-            <p id="turn-text" style="font-family: Orbitron; font-size: 1.2rem; color: var(--accent-biome)">TURNO DOS BIOMAS</p>
-            <p id="move-text" style="font-size: 0.8rem; color: #888">ROLE O DADO PARA MOVER</p>
-        </div>
-        <div class="stats">
-            <span id="score-biomes" style="color: var(--accent-biome)">VIVOS: 6</span> | <span id="score-invader" style="color: var(--accent-invader)">INVASORES: 3</span>
+        <div class="status-panel">
+            <span id="score-text" style="font-family: Orbitron; font-size: 1.1rem;">
+                <span style="color:var(--accent-biome)">VIVOS: 6</span> | <span style="color:var(--accent-invader)">INVASORES: 3</span>
+            </span>
         </div>
     </header>
 
     <main id="game-board">
         <svg id="svg-canvas" viewBox="0 0 1000 1000">
-            <g id="paths-layer"></g>
+            <g id="links-layer" opacity="0.3"></g>
             <g id="spaces-layer"></g>
             <g id="pawns-layer"></g>
         </svg>
     </main>
 
     <aside>
-        <div class="dice-container">
-            <p style="font-size: 0.7rem; color: #888">DISTÂNCIA</p>
-            <div class="dice" id="dice-val">?</div>
-            <button class="btn" id="btn-roll" style="width: 100%">ROLAR DADO</button>
+        <div class="dice-box">
+            <div id="dice-visual">?</div>
+            <button class="btn" id="roll-btn">ROLAR DADO</button>
+            <p id="turn-txt" style="margin-top: 15px; font-family: Orbitron; font-size: 0.7rem; color: #888;">TURNO DA NATUREZA</p>
         </div>
-        
-        <div id="log"></div>
+
+        <div id="game-log"></div>
     </aside>
 
-    <div id="modal">
-        <div class="modal-card">
-            <h2 id="modal-title" style="margin-bottom: 20px; font-family: Orbitron">VITÓRIA</h2>
-            <p id="modal-body" style="color: #ccc; margin-bottom: 30px"></p>
-            <button class="btn" onclick="location.reload()">RECOMEÇAR</button>
+    <div id="victory-modal">
+        <div class="modal-content">
+            <h1 id="victory-title" style="font-family: Orbitron; font-size: 2.5rem; margin-bottom: 20px;">VENCEU!</h1>
+            <p id="victory-desc" style="color: #aaa; margin-bottom: 30px; font-size: 1.2rem;"></p>
+            <button class="btn" onclick="location.reload()">JOGAR NOVAMENTE</button>
         </div>
     </div>
 
     <script>
-        const BIOMES = [
-            { id: 'AMAZONIA', name: 'Amazônia', color: '#2aff7f', angle: -90 },
-            { id: 'CERRADO', name: 'Cerrado', color: '#ffcc33', angle: -30 },
-            { id: 'CAATINGA', name: 'Caatinga', color: '#ff9933', angle: 30 },
-            { id: 'ATLANTICA', name: 'Mata Atlântica', color: '#00ba47', angle: 90 },
-            { id: 'COSTAO', name: 'Costão Rochoso', color: '#33ccff', angle: 150 },
-            { id: 'PANTANAL', name: 'Pantanal', color: '#3388ff', angle: 210 }
+        const BIOMES_DEF = [
+            { id: 'AMZ', name: 'Amazônia', color: '#2ed573', angle: -90 },
+            { id: 'CER', name: 'Cerrado', color: '#ffa502', angle: -30 },
+            { id: 'CAA', name: 'Caatinga', color: '#eccc68', angle: 30 },
+            { id: 'MAT', name: 'Mata Atlântica', color: '#1e90ff', angle: 90 },
+            { id: 'COS', name: 'Costão Rochoso', color: '#70a1ff', angle: 150 },
+            { id: 'PAN', name: 'Pantanal', color: '#3742fa', angle: 210 }
         ];
 
-        class Game {
+        class GameEngine {
             constructor() {
-                this.turn = 'BIOMES'; 
-                this.dice = 0;
-                this.state = 'WAIT_ROLL'; // WAIT_ROLL, WAIT_PIECE, WAIT_DEST
+                this.turn = 'BIOMES';
+                this.diceValue = 0;
+                this.state = 'WAIT_ROLL'; // WAIT_ROLL, SELECT_PAWN, SELECT_DEST
+                this.spaces = {};
                 this.pawns = [];
-                this.spaces = [];
                 this.selectedPawn = null;
-                this.validMoves = [];
-                
+                this.possibleDests = [];
+
                 this.initBoard();
                 this.initPawns();
                 this.bindEvents();
             }
 
             initBoard() {
-                // 1. Center Space
-                this.spaces.push({ id: 'BASE', x: 500, y: 500, type: 'BASE', neighbors: [] });
+                // 1. Central Base Node
+                this.spaces['BASE'] = { id: 'BASE', x: 500, y: 500, type: 'BASE', links: [] };
 
-                // 2. Radial Paths (Steps from Base to Biomes)
-                BIOMES.forEach(b => {
-                    const steps = 4; // 4 dots + Biome
-                    const rad = 380;
-                    let lastId = 'BASE';
+                // 2. Build Radial Trilha (Steps)
+                BIOMES_DEF.forEach(b => {
+                    const stepsCount = 4;
+                    const maxRadius = 400;
+                    let lastNodeId = 'BASE';
 
-                    for (let i = 1; i <= steps; i++) {
-                        const dist = (rad / (steps + 1)) * i;
+                    for (let i = 1; i <= stepsCount; i++) {
+                        const dist = (maxRadius / (stepsCount + 1)) * i;
                         const x = 500 + dist * Math.cos(b.angle * Math.PI / 180);
                         const y = 500 + dist * Math.sin(b.angle * Math.PI / 180);
-                        const sid = `rad-${b.id}-${i}`;
-                        
-                        const space = { id: sid, x, y, type: 'STEP', neighbors: [lastId] };
-                        this.getSpace(lastId).neighbors.push(sid);
-                        this.spaces.push(space);
-                        lastId = sid;
+                        const id = `r-${b.id}-${i}`;
+                        this.spaces[id] = { id, x, y, type: 'STEP', links: [lastNodeId] };
+                        this.spaces[lastNodeId].links.push(id);
+                        lastNodeId = id;
                     }
 
-                    // Biome Space
-                    const bx = 500 + rad * Math.cos(b.angle * Math.PI / 180);
-                    const by = 500 + rad * Math.sin(b.angle * Math.PI / 180);
-                    const biomeSpace = { id: b.id, x: bx, y: by, type: 'BIOME', name: b.name, color: b.color, neighbors: [lastId] };
-                    this.getSpace(lastId).neighbors.push(b.id);
-                    this.spaces.push(biomeSpace);
+                    // Biome Node (The Tip)
+                    const bx = 500 + maxRadius * Math.cos(b.angle * Math.PI / 180);
+                    const by = 500 + maxRadius * Math.sin(b.angle * Math.PI / 180);
+                    this.spaces[b.id] = { id: b.id, x: bx, y: by, type: 'BIOME', name: b.name, color: b.color, links: [lastNodeId] };
+                    this.spaces[lastNodeId].links.push(b.id);
                 });
 
-                // 3. Circular Paths (Between Biomes)
-                BIOMES.forEach((b, i) => {
-                    const next = BIOMES[(i + 1) % 6];
-                    const steps = 5;
-                    let lastId = b.id;
-
+                // 3. Circular Connections (Inter-biomes)
+                BIOMES_DEF.forEach((b, i) => {
+                    const next = BIOMES_DEF[(i + 1) % 6];
+                    const steps = 6;
+                    let prevId = b.id;
                     for (let j = 1; j <= steps; j++) {
                         const t = j / (steps + 1);
-                        // Interpolate angle for a curved path effect
-                        const startA = b.angle * Math.PI / 180;
-                        const endA = (i === 5 ? 270 : next.angle) * Math.PI / 180;
-                        const currentA = startA + (endA - startA) * t;
-                        const dist = 380; // Keep circular
-                        
-                        const x = 500 + dist * Math.cos(currentA);
-                        const y = 500 + dist * Math.sin(currentA);
-                        const sid = `circ-${b.id}-${next.id}-${j}`;
-                        
-                        const space = { id: sid, x, y, type: 'STEP', neighbors: [lastId] };
-                        this.getSpace(lastId).neighbors.push(sid);
-                        this.spaces.push(space);
-                        lastId = sid;
+                        const startA = b.angle;
+                        const endA = (i === 5 ? 270 : next.angle);
+                        const angle = (startA + (endA - startA) * t) * Math.PI / 180;
+                        const dist = 400;
+                        const x = 500 + dist * Math.cos(angle);
+                        const y = 500 + dist * Math.sin(angle);
+                        const id = `c-${b.id}-${next.id}-${j}`;
+                        this.spaces[id] = { id, x, y, type: 'STEP', links: [prevId] };
+                        this.spaces[prevId].links.push(id);
+                        prevId = id;
                     }
-                    this.getSpace(lastId).neighbors.push(next.id);
-                    this.getSpace(next.id).neighbors.push(lastId);
+                    this.spaces[prevId].links.push(next.id);
+                    this.spaces[next.id].links.push(prevId);
                 });
 
-                this.renderSpaces();
+                this.renderBoard();
             }
 
-            getSpace(id) { return this.spaces.find(s => s.id === id); }
-
             initPawns() {
-                // Biome pawns start at their biomes
-                BIOMES.forEach(b => {
-                    this.pawns.push({ id: `pawn-${b.id}`, side: 'BIOMES', spaceId: b.id, color: b.color, icon: '🌲' });
+                // Biome pawns at their tips
+                BIOMES_DEF.forEach(b => {
+                    this.pawns.push({ id: `p-${b.id}`, side: 'BIOMES', spaceId: b.id, color: b.color, icon: '🌳' });
                 });
-                // Invader pawns start at center
+                // 3 Invaders at the center
                 for (let i = 0; i < 3; i++) {
-                    this.pawns.push({ id: `pawn-inv-${i}`, side: 'INVADER', spaceId: 'BASE', color: '#ff3e3e', icon: '👹' });
+                    this.pawns.push({ id: `i-${i}`, side: 'INVADER', spaceId: 'BASE', color: '#ff4757', icon: '💀' });
                 }
                 this.renderPawns();
             }
 
-            renderSpaces() {
-                const layer = document.getElementById('spaces-layer');
-                this.spaces.forEach(s => {
-                    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                    g.setAttribute('class', 'space');
-                    g.onclick = () => this.handleSpaceClick(s.id);
+            renderBoard() {
+                const spaceLayer = document.getElementById('spaces-layer');
+                const linksLayer = document.getElementById('links-layer');
 
-                    if (s.type === 'BASE') {
-                        const poly = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                        poly.setAttribute('cx', s.x); poly.setAttribute('cy', s.y); poly.setAttribute('r', '50');
-                        poly.setAttribute('fill', '#000'); poly.setAttribute('stroke', '#ff3e3e');
-                        g.appendChild(poly);
-                    } else if (s.type === 'BIOME') {
-                        const c = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                        c.setAttribute('x', s.x - 40); c.setAttribute('y', s.y - 40);
-                        c.setAttribute('width', '80'); c.setAttribute('height', '80');
-                        c.setAttribute('rx', '15');
-                        c.setAttribute('fill', '#111'); c.setAttribute('stroke', s.color);
-                        g.appendChild(c);
-                        
-                        const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        t.setAttribute('x', s.x); t.setAttribute('y', s.y + 60);
-                        t.setAttribute('text-anchor', 'middle'); t.setAttribute('fill', '#888');
-                        t.setAttribute('font-size', '12'); t.textContent = s.name;
-                        g.appendChild(t);
-                    } else {
-                        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                        dot.setAttribute('cx', s.x); dot.setAttribute('cy', s.y); dot.setAttribute('r', '12');
-                        dot.setAttribute('class', 'space-dot');
-                        dot.id = `dot-${s.id}`;
-                        g.appendChild(dot);
+                Object.values(this.spaces).forEach(s => {
+                    // Draw Links
+                    s.links.forEach(lid => {
+                        const l = this.spaces[lid];
+                        if (lid > s.id) { // Prevent double-draw
+                            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                            line.setAttribute('x1', s.x); line.setAttribute('y1', s.y);
+                            line.setAttribute('x2', l.x); line.setAttribute('y2', l.y);
+                            line.setAttribute('stroke', '#444'); line.setAttribute('stroke-width', '4');
+                            linksLayer.appendChild(line);
+                        }
+                    });
+
+                    // Draw Node
+                    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    g.setAttribute('class', 'node');
+                    g.onclick = () => this.handleNodeClick(s.id);
+
+                    const base = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    base.setAttribute('cx', s.x); base.setAttribute('cy', s.y);
+                    base.setAttribute('r', s.type === 'BIOME' ? '30' : (s.type === 'BASE' ? '60' : '15'));
+                    base.setAttribute('fill', s.type === 'BASE' ? '#000' : '#1a1a1a');
+                    base.setAttribute('stroke', s.color || '#333');
+                    base.setAttribute('stroke-width', '4');
+                    base.setAttribute('class', 'node-base');
+                    g.appendChild(base);
+
+                    if (s.type === 'BIOME') {
+                        const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        txt.setAttribute('x', s.x); txt.setAttribute('y', s.y + 45);
+                        txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('font-size', '14');
+                        txt.setAttribute('fill', s.color); txt.textContent = s.name.toUpperCase();
+                        g.appendChild(txt);
                     }
-                    layer.appendChild(g);
+
+                    spaceLayer.appendChild(g);
                 });
             }
 
             renderPawns() {
                 const layer = document.getElementById('pawns-layer');
                 layer.innerHTML = '';
-                
-                // Grouping to avoid perfect overlap
-                const posMap = {};
+
+                // Group pawns to offset them if on same space
+                const grouped = {};
                 this.pawns.forEach(p => {
-                    if (!posMap[p.spaceId]) posMap[p.spaceId] = [];
-                    posMap[p.spaceId].push(p);
+                    if (!grouped[p.spaceId]) grouped[p.spaceId] = [];
+                    grouped[p.spaceId].push(p);
                 });
 
-                Object.entries(posMap).forEach(([sid, ps]) => {
-                    const s = this.getSpace(sid);
-                    ps.forEach((p, idx) => {
-                        const ox = (idx - (ps.length-1)/2) * 20;
+                Object.entries(grouped).forEach(([sid, ps]) => {
+                    const space = this.spaces[sid];
+                    ps.forEach((p, i) => {
+                        const offset = (i - (ps.length - 1) / 2) * 25;
                         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                        g.setAttribute('class', 'pawn');
-                        g.setAttribute('transform', `translate(${s.x + ox}, ${s.y})`);
-                        g.style.cursor = (this.turn === p.side && this.state === 'WAIT_PIECE') ? 'pointer' : 'default';
+                        g.setAttribute('class', `pawn ${this.selectedPawn === p ? 'active-pawn' : ''}`);
+                        g.setAttribute('transform', `translate(${space.x + offset}, ${space.y})`);
                         g.onclick = (e) => { e.stopPropagation(); this.handlePawnClick(p); };
 
                         const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                        c.setAttribute('r', '18'); c.setAttribute('fill', '#fff');
-                        c.setAttribute('stroke', p.color); c.setAttribute('stroke-width', this.selectedPawn === p ? '5' : '1');
-                        
-                        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        text.setAttribute('y', 6); text.setAttribute('text-anchor', 'middle');
-                        text.setAttribute('font-size', '16'); text.textContent = p.icon;
+                        c.setAttribute('r', '22'); c.setAttribute('fill', '#fff');
+                        c.setAttribute('stroke', p.color); c.setAttribute('stroke-width', '2');
+                        g.appendChild(c);
 
-                        g.appendChild(c); g.appendChild(text);
+                        const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        txt.setAttribute('y', 8); txt.setAttribute('text-anchor', 'middle');
+                        txt.setAttribute('font-size', '20'); txt.textContent = p.icon;
+                        g.appendChild(txt);
+
                         layer.appendChild(g);
                     });
                 });
             }
 
             bindEvents() {
-                document.getElementById('btn-roll').onclick = () => this.rollDice();
+                document.getElementById('roll-btn').onclick = () => this.rollDice();
             }
 
-            rollDice() {
+            async rollDice() {
                 if (this.state !== 'WAIT_ROLL') return;
-                this.dice = Math.floor(Math.random() * 6) + 1;
-                document.getElementById('dice-val').innerText = this.dice;
-                this.state = 'WAIT_PIECE';
-                document.getElementById('btn-roll').disabled = true;
-                this.log(`Rolou: ${this.dice}. Escolha sua peça.`, this.turn.toLowerCase());
+                const visual = document.getElementById('dice-visual');
+                visual.classList.add('rolling');
+                
+                // Real Rolling Effect
+                for(let i=0; i<10; i++) {
+                    visual.innerText = Math.floor(Math.random()*6)+1;
+                    await new Promise(r => setTimeout(r, 80));
+                }
+
+                this.diceValue = Math.floor(Math.random() * 6) + 1;
+                visual.classList.remove('rolling');
+                visual.innerText = this.diceValue;
+                
+                this.state = 'SELECT_PAWN';
+                this.log(`Você tirou ${this.diceValue}! Escolha seu pião para mover.`, this.turn.toLowerCase());
                 this.renderPawns();
+                document.getElementById('roll-btn').disabled = true;
             }
 
-            handlePawnClick(p) {
-                if (this.state !== 'WAIT_PIECE' || p.side !== this.turn) return;
-                this.selectedPawn = p;
-                this.calculateValidMoves(p.spaceId, this.dice);
-                this.state = 'WAIT_DEST';
+            handlePawnClick(pawn) {
+                if (this.state !== 'SELECT_PAWN' || pawn.side !== this.turn) return;
+                this.selectedPawn = pawn;
+                this.calculatePossibleMoves();
+                this.state = 'SELECT_DEST';
                 this.renderPawns();
-                this.renderHighlights();
+                this.highlightDests();
             }
 
-            calculateValidMoves(curr, dist) {
-                this.validMoves = [];
-                let queue = [{ id: curr, d: 0 }];
-                let visited = new Set();
+            calculatePossibleMoves() {
+                const start = this.selectedPawn.spaceId;
+                const dist = this.diceValue;
+                let results = new Set();
 
-                while (queue.length > 0) {
+                // BFS for exactly X steps
+                let queue = [{ id: start, d: 0 }];
+                while(queue.length > 0) {
                     let { id, d } = queue.shift();
                     if (d === dist) {
-                        this.validMoves.push(id);
+                        results.add(id);
                         continue;
                     }
-                    const space = this.getSpace(id);
-                    space.neighbors.forEach(n => {
-                        // Restriction: Invaders can only use Circular if they own a biome bridgehead? 
-                        // Simplified: Pião game = move everywhere if connected.
-                        queue.push({ id: n, d: d + 1 });
+                    this.spaces[id].links.forEach(nextId => {
+                        queue.push({ id: nextId, d: d + 1 });
                     });
                 }
-                // Filter unique
-                this.validMoves = [...new Set(this.validMoves)];
+                this.possibleDests = Array.from(results).filter(id => id !== start);
             }
 
-            renderHighlights() {
-                // Remove old
-                document.querySelectorAll('.space-highlight').forEach(el => el.remove());
-                const layer = document.getElementById('spaces-layer');
-                this.validMoves.forEach(mid => {
-                    const s = this.getSpace(mid);
-                    const h = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                    h.setAttribute('cx', s.x); h.setAttribute('cy', s.y); h.setAttribute('r', '20');
-                    h.setAttribute('class', 'space-highlight');
-                    h.style.pointerEvents = 'none';
-                    layer.appendChild(h);
+            highlightDests() {
+                document.querySelectorAll('.node-highlight').forEach(el => el.remove());
+                this.possibleDests.forEach(did => {
+                    const space = this.spaces[did];
+                    const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    ring.setAttribute('cx', space.x); ring.setAttribute('cy', space.y);
+                    ring.setAttribute('r', space.type === 'BIOME' ? '40' : (space.type === 'BASE' ? '70' : '25'));
+                    ring.setAttribute('fill', 'none'); ring.setAttribute('stroke', '#fff');
+                    ring.setAttribute('class', 'node-highlight');
+                    ring.style.pointerEvents = 'none';
+                    document.getElementById('spaces-layer').appendChild(ring);
                 });
             }
 
-            handleSpaceClick(sid) {
-                if (this.state !== 'WAIT_DEST' || !this.validMoves.includes(sid)) return;
-                
-                const oldSpace = this.selectedPawn.spaceId;
-                this.selectedPawn.spaceId = sid;
-                
-                // Conflict
-                const rivals = this.pawns.filter(p => p.spaceId === sid && p.side !== this.turn);
+            handleNodeClick(id) {
+                if (this.state !== 'SELECT_DEST' || !this.possibleDests.includes(id)) return;
+                this.executeMove(id);
+            }
+
+            executeMove(targetId) {
+                const pawn = this.selectedPawn;
+                pawn.spaceId = targetId;
+
+                // Check Capture
+                const rivals = this.pawns.filter(p => p.spaceId === targetId && p.side !== pawn.side);
                 if (rivals.length > 0) {
-                    this.log(`CONFRONTO em ${sid}!`, 'system');
-                    // Remove rival
+                    this.log(`O ${pawn.side === 'BIOMES' ? 'Guardião' : 'Invasor'} capturou uma peça rival!`, 'system');
                     this.pawns = this.pawns.filter(p => p !== rivals[0]);
-                    this.log(`${rivals[0].side} foi capturado!`, 'system');
                 }
 
-                this.log(`Ficou em ${sid}`, this.turn.toLowerCase());
                 this.endTurn();
             }
 
@@ -439,54 +449,49 @@
                 this.turn = this.turn === 'BIOMES' ? 'INVADER' : 'BIOMES';
                 this.state = 'WAIT_ROLL';
                 this.selectedPawn = null;
-                this.validMoves = [];
-                this.dice = 0;
-                
-                document.getElementById('dice-val').innerText = '?';
-                document.getElementById('btn-roll').disabled = false;
-                
-                const text = document.getElementById('turn-text');
-                text.innerText = this.turn === 'BIOMES' ? 'TURNO DOS BIOMAS' : 'TURNO DOS INVASORES';
-                text.style.color = this.turn === 'BIOMES' ? 'var(--accent-biome)' : 'var(--accent-invader)';
-                
+                this.possibleDests = [];
                 this.renderPawns();
-                // Clear highlights
-                document.querySelectorAll('.space-highlight').forEach(el => el.remove());
+                document.querySelectorAll('.node-highlight').forEach(el => el.remove());
+                
+                document.getElementById('roll-btn').disabled = false;
+                document.getElementById('turn-txt').innerText = this.turn === 'BIOMES' ? 'TURNO DA NATUREZA' : 'TURNO DOS INVASORES';
+                document.getElementById('turn-txt').style.color = this.turn === 'BIOMES' ? 'var(--accent-biome)' : 'var(--accent-invader)';
+                
                 this.updateScore();
                 this.checkVictory();
             }
 
             updateScore() {
-                const bCount = this.pawns.filter(p => p.side === 'BIOMES').length;
-                const iCount = this.pawns.filter(p => p.side === 'INVADER').length;
-                document.getElementById('score-biomes').innerText = `VIVOS: ${bCount}`;
-                document.getElementById('score-invader').innerText = `INVASORES: ${iCount}`;
+                const b = this.pawns.filter(p => p.side === 'BIOMES').length;
+                const i = this.pawns.filter(p => p.side === 'INVADER').length;
+                document.getElementById('score-text').innerHTML = `
+                    <span style="color:var(--accent-biome)">VIVOS: ${b}</span> | <span style="color:var(--accent-invader)">INVASORES: ${i}</span>
+                `;
             }
 
             checkVictory() {
-                const bCount = this.pawns.filter(p => p.side === 'BIOMES').length;
-                const iCount = this.pawns.filter(p => p.side === 'INVADER').length;
-                
-                if (iCount === 0) this.endGame("VITÓRIA DA NATUREZA", "Todos os invasores foram repelidos!");
-                if (bCount === 0) this.endGame("FIM DO MUNDO", "A destruição consumiu todos os biomas.");
+                const b = this.pawns.filter(p => p.side === 'BIOMES').length;
+                const i = this.pawns.filter(p => p.side === 'INVADER').length;
+                if (i === 0) this.showVictory("VITÓRIA!", "A floresta repeliu a invasão!");
+                else if (b === 0) this.showVictory("DERROTA!", "A devastação tomou conta dos biomas.");
             }
 
-            endGame(title, body) {
-                document.getElementById('modal-title').innerText = title;
-                document.getElementById('modal-body').innerText = body;
-                document.getElementById('modal').style.display = 'flex';
+            showVictory(title, desc) {
+                document.getElementById('victory-title').innerText = title;
+                document.getElementById('victory-desc').innerText = desc;
+                document.getElementById('victory-modal').style.display = 'flex';
             }
 
             log(msg, cls) {
-                const l = document.getElementById('log');
+                const log = document.getElementById('game-log');
                 const div = document.createElement('div');
-                div.className = `log-msg ${cls}`;
-                div.innerText = `> ${msg}`;
-                l.prepend(div);
+                div.className = `log-entry log-${cls}`;
+                div.innerHTML = `> ${msg}`;
+                log.prepend(div);
             }
         }
 
-        const game = new Game();
+        const game = new GameEngine();
     </script>
 </body>
 </html>
