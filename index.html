@@ -72,9 +72,13 @@
             font-weight: 900;
             font-size: 1.2rem;
             transition: 0.3s;
+            text-shadow: 0 0 15px currentColor;
         }
-        .turn-forest { color: var(--accent-biome); text-shadow: 0 0 10px rgba(0,242,255,0.5); }
-        .turn-invader { color: var(--accent-invader); text-shadow: 0 0 10px rgba(255,62,62,0.5); }
+        .turn-forest { color: var(--accent-biome); }
+        .turn-invader { color: var(--accent-invader); }
+
+        .stat-label { font-size: 0.7rem; color: #888; text-transform: uppercase; display: block; }
+        .stat-value { font-family: 'Orbitron'; font-size: 1.1rem; font-weight: 900; }
 
         #game-board {
             grid-area: board;
@@ -209,13 +213,18 @@
             <h1>BIOMAS EM GUERRA</h1>
         </div>
         <div class="turn-indicator">
-            <h2 id="phase-display">FASE DE RECRUTAMENTO</h2>
-            <p id="turn-display" class="turn-forest">FLORESTA</p>
+            <h2 id="phase-display">AÇÃO NATURAL</h2>
+            <p id="turn-display" class="turn-forest">PROTEÇÃO DA FLORESTA</p>
         </div>
-        <div class="stats-header">
-            <span style="color:var(--accent-biome)">RESCURSOS: <span id="res-biomes">10</span></span>
-            <span style="margin: 0 20px">|</span>
-            <span style="color:var(--accent-invader)">TROPAS: <span id="res-invader">10</span></span>
+        <div class="stats-header" style="display: flex; gap: 40px;">
+            <div style="text-align: right">
+                <span class="stat-label">Bioenergia (Sementes)</span>
+                <span class="stat-value" style="color:var(--accent-biome)" id="res-biomes">10</span>
+            </div>
+            <div style="text-align: left">
+                <span class="stat-label">Poder de Destruição</span>
+                <span class="stat-value" style="color:var(--accent-invader)" id="res-invader">10</span>
+            </div>
         </div>
     </header>
 
@@ -286,10 +295,10 @@
 
         class GameEngine {
             constructor() {
-                this.turn = 'BIOMES'; // BIOMES or INVADER
-                this.phase = 'RECRUIT'; // RECRUIT, MOVE, ATTACK
+                this.turn = 'BIOMES'; 
+                this.phase = 'RESTORE'; // RESTORE, AID, RESIST (for biomes) / DAMAGE, ADVANCE, DESTROY (for invaders)
                 this.territories = {
-                    'BASE': { id: 'BASE', owner: 'INVADER', troops: 10, name: 'Base Invasora' }
+                    'BASE': { id: 'BASE', owner: 'INVADER', troops: 10, name: 'Núcleo Invasor' }
                 };
                 BIOMES_ORDER.forEach(b => {
                     this.territories[b.id] = { ...b, owner: 'BIOMES', troops: 5 };
@@ -303,7 +312,7 @@
             init() {
                 this.renderBoard();
                 this.updateUI();
-                this.log("Início da partida. Salve os biomas!", "system");
+                this.log("A natureza está em alerta. Proteja as conexões vitais!", "system");
                 
                 document.getElementById('btn-next').onclick = () => this.nextPhase();
             }
@@ -565,12 +574,15 @@
             }
 
             nextPhase() {
-                const phases = ['RECRUIT', 'MOVE', 'ATTACK'];
+                const phases = this.turn === 'BIOMES' ? 
+                    ['RESTORE', 'AID', 'RESIST'] : 
+                    ['DAMAGE', 'ADVANCE', 'DESTROY'];
+                
                 let idx = phases.indexOf(this.phase);
                 
                 if (idx === 2) {
-                    this.phase = 'RECRUIT';
                     this.turn = this.turn === 'BIOMES' ? 'INVADER' : 'BIOMES';
+                    this.phase = this.turn === 'BIOMES' ? 'RESTORE' : 'DAMAGE';
                     this.calculateResources();
                 } else {
                     this.phase = phases[idx + 1];
@@ -587,20 +599,31 @@
                 });
                 const bonus = Math.max(3, Math.floor(count / 2));
                 this.resources[this.turn] += bonus;
-                this.log(`Novo turno: +${bonus} recursos`, this.turn.toLowerCase());
+                const msg = this.turn === 'BIOMES' ? 
+                    `A força da natureza cresce: +${bonus} bioenergia` : 
+                    `A destruição se espalha: +${bonus} poder de ataque`;
+                this.log(msg, this.turn.toLowerCase());
             }
 
             updateUI() {
                 const phasesMap = {
-                    'RECRUIT': 'RECRUTAMENTO',
-                    'MOVE': 'MOVIMENTAÇÃO',
-                    'ATTACK': 'ATAQUE'
+                    'RESTORE': 'RESTAURAÇÃO',
+                    'AID': 'AUXÍLIO VIZINHO',
+                    'RESIST': 'RESISTÊNCIA',
+                    'DAMAGE': 'CONCENTRAÇÃO',
+                    'ADVANCE': 'AVANÇO',
+                    'DESTROY': 'DESTRUIÇÃO'
                 };
                 
-                document.getElementById('phase-display').innerText = `FASE DE ${phasesMap[this.phase]}`;
+                document.getElementById('phase-display').innerText = phasesMap[this.phase];
                 const turnEl = document.getElementById('turn-display');
-                turnEl.innerText = this.turn === 'BIOMES' ? 'FLORESTA' : 'INVASORES';
-                turnEl.className = this.turn === 'BIOMES' ? 'turn-forest' : 'turn-invader';
+                if (this.turn === 'BIOMES') {
+                    turnEl.innerText = 'PROTEÇÃO DA FLORESTA';
+                    turnEl.className = 'turn-forest';
+                } else {
+                    turnEl.innerText = 'ATAQUE DOS INVASORES';
+                    turnEl.className = 'turn-invader';
+                }
 
                 document.getElementById('res-biomes').innerText = this.resources.BIOMES;
                 document.getElementById('res-invader').innerText = this.resources.INVADER;
