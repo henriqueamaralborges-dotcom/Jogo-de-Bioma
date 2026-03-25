@@ -3,142 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biomas em Guerra: Trilha Extrema</title>
+    <title>Biomas em Guerra: Solução Final</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Outfit:wght@400;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --forest-color: #00ff7f;
-            --invader-color: #ff4757;
-            --bg-color: #1a1a2e;
-            --slot-color: #3d3d5c;
+            --forest: #00d2d3;
+            --invader: #ff3838;
             --highlight: #ffee00;
         }
-
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { 
-            background: var(--bg-color); 
-            font-family: 'Outfit', sans-serif; 
-            height: 100vh; 
-            display: grid; 
-            grid-template-columns: 1fr 350px;
-            overflow: hidden;
-            color: #fff;
-        }
-
-        #board-container {
-            position: relative;
-            background: radial-gradient(circle, #222244 0%, #000 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        #svg-board { width: 95%; height: 95%; touch-action: none; }
-
-        #sidebar {
-            background: #161625;
-            border-left: 2px solid #000;
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
-            z-index: 10;
-        }
-
-        .header-logo { font-family: 'Fredoka One'; font-size: 2rem; color: #fff; text-align: center; }
+        body { background: #0a0b1e; color: #fff; font-family: 'Outfit', sans-serif; height: 100vh; display: flex; overflow: hidden; }
         
-        .dice-panel { background: #000; border-radius: 20px; padding: 30px; border: 2px solid #444; text-align: center; }
-        #dice-face { font-size: 5rem; margin-bottom: 15px; }
-        
-        .btn { 
-            width: 100%; padding: 20px; border-radius: 12px; border: none; 
-            font-family: 'Fredoka One'; font-size: 1.2rem; cursor: pointer; transition: 0.2s;
-            background: #fff; color: #000; box-shadow: 0 6px 0 #999;
-        }
-        .btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 9px 0 #999; }
-        .btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 3px 0 #999; }
-        .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        #board-wrapper { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #1a1a2e 0%, #000 100%); }
+        #board-svg { width: 95%; height: 95%; }
 
-        .hint-text { background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; border: 2px solid var(--highlight); color: var(--highlight); font-weight: 900; text-align: center; }
+        #sidebar { width: 380px; background: #161625; border-left: 3px solid #000; padding: 30px; display: flex; flex-direction: column; gap: 20px; box-shadow: -10px 0 30px #000; }
+        .logo { font-family: 'Fredoka One'; font-size: 2rem; text-align: center; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
 
-        #log-area { flex:1; background: #000; border-radius: 10px; padding: 15px; overflow-y: auto; font-size: 0.85rem; color: #aaa; }
+        .ui-panel { background: #000; border-radius: 20px; padding: 25px; border: 2px solid #333; text-align: center; }
+        #dice-view { font-size: 5rem; margin-bottom: 15px; }
 
-        /* Board classes */
-        .slot { cursor: pointer; pointer-events: all; }
-        .slot circle { transition: 0.3s; fill: var(--slot-color); stroke: #555; stroke-width: 2; }
-        .slot:hover circle { fill: #555; r: 25; }
-        
-        .link-line { stroke: #333; stroke-width: 4; stroke-linecap: round; pointer-events: none; }
-        
-        /* Highlight for valid destinations */
-        .dest-highlight { 
-            stroke: #fff !important; 
-            stroke-width: 8 !important; 
-            stroke-dasharray: 10 5; 
-            animation: dash-rotate 2s linear infinite; 
-            fill: rgba(255,255,255,0.4) !important;
-            r: 40 !important;
-        }
-        @keyframes dash-rotate { from { stroke-dashoffset: 30; } to { stroke-dashoffset: 0; } }
+        .btn-roll { width: 100%; padding: 20px; border-radius: 15px; border: none; background: #fff; color: #000; font-family: 'Fredoka One'; font-size: 1.3rem; cursor: pointer; box-shadow: 0 6px 0 #999; }
+        .btn-roll:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 9px 0 #999; }
+        .btn-roll:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 3px 0 #999; }
+        .btn-roll:disabled { opacity: 0.2; cursor: not-allowed; }
 
-        .pawn-group { 
-            cursor: pointer; 
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            pointer-events: all;
-        }
-        .pawn-selected { filter: drop-shadow(0 0 20px #fff); transform: translateY(-10px) scale(1.3) !important; z-index: 100; }
-        
-        .pawn-can-move { animation: jump 0.8s infinite alternate; }
-        @keyframes jump { from { transform: translateY(0); } to { transform: translateY(-15px); } }
+        .instruction { background: rgba(255,196,0,0.1); padding: 15px; border-radius: 10px; border: 2px solid var(--highlight); color: var(--highlight); font-weight: 900; text-align: center; text-transform: uppercase; }
 
-        #win-msg { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        #game-log { flex: 1; background: #000; border-radius: 10px; padding: 15px; overflow-y: auto; font-size: 0.85rem; color: #888; border: 1px solid #222; }
+
+        /* Board Elements */
+        .slot { cursor: pointer; }
+        .slot circle { fill: #2d3436; stroke: #444; stroke-width: 2; transition: 0.3s; }
+        .slot:hover circle { fill: #444; }
+
+        .valid-target circle { stroke: #fff !important; stroke-width: 8 !important; stroke-dasharray: 10 5; animation: dash-anim 2s linear infinite; fill: rgba(255,255,255,0.4) !important; r: 35 !important; }
+        @keyframes dash-anim { from { stroke-dashoffset: 35; } to { stroke-dashoffset: 0; } }
+
+        /* Animation fix: use nested G or SVG native animation */
+        .jump-container { transform-box: fill-box; transform-origin: center; animation: jmp 0.8s infinite alternate ease-in-out; }
+        @keyframes jmp { from { transform: translateY(0); } to { transform: translateY(-20px); } }
+
+        .pawn-selected-eff { filter: drop-shadow(0 0 15px #fff); }
+
+        #modal-win { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; }
     </style>
 </head>
 <body>
-    <div id="board-container">
-        <svg id="svg-board" viewBox="0 0 1000 1000">
-            <g id="links-layer"></g>
-            <g id="slots-layer"></g>
-            <g id="pawns-layer"></g>
+    <div id="board-wrapper">
+        <svg id="board-svg" viewBox="0 0 1000 1000">
+            <g id="layer-links" opacity="0.2"></g>
+            <g id="layer-slots"></g>
+            <g id="layer-pawns"></g>
         </svg>
     </div>
 
     <div id="sidebar">
-        <div class="header-logo">BIOMAS EM GUERRA</div>
-        <div id="turn-display" style="text-align: center; font-weight: 900; color: var(--invader-color); font-size: 1.4rem;">TURNO: INVASORES</div>
+        <div class="logo">BIOMAS EM GUERRA</div>
+        <div id="display-turn" style="text-align: center; font-weight: 900; color: var(--invader); font-size: 1.5rem;">TURNO: INVASORES</div>
         
-        <div class="dice-panel">
-            <div id="dice-face">🎲</div>
-            <button class="btn" id="roll-btn">ROLAR DADO</button>
+        <div class="ui-panel">
+            <div id="dice-view">🎲</div>
+            <button class="btn-roll" id="roll-btn">ROLAR DADO</button>
         </div>
 
-        <div id="hint" class="hint-text">BEM-VINDO! ROLE O DADO</div>
+        <div id="hint-box" class="instruction">BEM-VINDO! ROLE O DADO</div>
         
-        <div id="log-area"></div>
+        <div id="game-log"></div>
     </div>
 
-    <div id="win-msg">
-        <h1 id="win-title" style="font-family: Fredoka One; font-size: 4rem; color: #fff; margin-bottom: 20px;">VENCERAM!</h1>
-        <button class="btn" style="width: auto; padding: 20px 40px;" onclick="location.reload()">JOGAR NOVAMENTE</button>
+    <div id="modal-win">
+        <h1 id="win-txt" style="font-family: Fredoka One; font-size: 4rem; margin-bottom: 20px;">VENCEU!</h1>
+        <button class="btn-roll" style="width: auto; padding: 20px 50px;" onclick="location.reload()">RECOMEÇAR</button>
     </div>
 
     <script>
         const CONFIG = [
-            { id: 'AM', n: 'Amazônia', c: '#00ff7f', a: -90 },
-            { id: 'CE', n: 'Cerrado', c: '#ffa502', a: -30 },
-            { id: 'CA', n: 'Caatinga', c: '#ff7f50', a: 30 },
-            { id: 'MA', n: 'Mata Atlântica', c: '#3273ff', a: 90 },
-            { id: 'CO', n: 'Costão', c: '#5fdfff', a: 150 },
-            { id: 'PA', n: 'Pantanal', c: '#575fcf', a: 210 }
+            { id: 'AM', n: 'Amazônia', c: '#00d2d3', a: -90 },
+            { id: 'CE', n: 'Cerrado', c: '#ff9f43', a: -30 },
+            { id: 'CA', n: 'Caatinga', c: '#ee5253', a: 30 },
+            { id: 'MA', n: 'Mata Atlântica', c: '#54a0ff', a: 90 },
+            { id: 'CO', n: 'Costão', c: '#00d2d3', a: 150 },
+            { id: 'PA', n: 'Pantanal', c: '#5f27cd', a: 210 }
         ];
 
-        class GameEngine {
+        class Game {
             constructor() {
                 this.turn = 'INVADER'; 
                 this.dice = 0;
-                this.phase = 'ROLL'; 
+                this.state = 'ROLL'; // ROLL, PAWN, MOVE
                 this.spaces = {};
                 this.pawns = [];
                 this.selected = null;
@@ -146,25 +101,26 @@
 
                 this.initGraph();
                 this.initPawns();
-                this.bindEvents();
-                this.refreshUI();
+                this.bind();
+                this.updateUI();
             }
 
             initGraph() {
-                this.addSpace('CENTER', 500, 500, 'HOME');
+                // Add center
+                this.addS('CENTER', 500, 500, 'HOME');
                 CONFIG.forEach(b => {
                     let prev = 'CENTER';
                     for (let i = 1; i <= 4; i++) {
                         const sid = `r-${b.id}-${i}`;
-                        const radius = (420 / 5) * i;
-                        const x = 500 + radius * Math.cos(b.a * Math.PI / 180);
-                        const y = 500 + radius * Math.sin(b.a * Math.PI / 180);
-                        this.addSpace(sid, x, y, 'STEP');
-                        this.connect(prev, sid);
+                        const d = (400 / 5) * i;
+                        const x = 500 + d * Math.cos(b.a * Math.PI / 180);
+                        const y = 500 + d * Math.sin(b.a * Math.PI / 180);
+                        this.addS(sid, x, y, 'STEP');
+                        this.link(prev, sid);
                         prev = sid;
                     }
-                    this.addSpace(b.id, 500 + 420 * Math.cos(b.a * Math.PI / 180), 500 + 420 * Math.sin(b.a * Math.PI / 180), 'BIOME', b.n, b.c);
-                    this.connect(prev, b.id);
+                    this.addS(b.id, 500 + 400 * Math.cos(b.a * Math.PI / 180), 500 + 400 * Math.sin(b.a * Math.PI / 180), 'BIOME', b.n, b.c);
+                    this.link(prev, b.id);
                 });
 
                 CONFIG.forEach((b, i) => {
@@ -172,259 +128,216 @@
                     let prev = b.id;
                     for (let j = 1; j <= 6; j++) {
                         const sid = `c-${b.id}-${next.id}-${j}`;
-                        const startA = b.a;
-                        const endA = (i === 5 ? (b.a + 60) : next.a);
-                        const a = (startA + (endA - startA) * (j / 7)) * Math.PI / 180;
-                        const x = 500 + 420 * Math.cos(a);
-                        const y = 500 + 420 * Math.sin(a);
-                        this.addSpace(sid, x, y, 'STEP');
-                        this.connect(prev, sid);
+                        const sA = b.a;
+                        const eA = (i === 5 ? (b.a + 60) : next.a);
+                        const a = (sA + (eA - sA) * (j / 7)) * Math.PI / 180;
+                        const x = 500 + 400 * Math.cos(a);
+                        const y = 500 + 400 * Math.sin(a);
+                        this.addS(sid, x, y, 'STEP');
+                        this.link(prev, sid);
                         prev = sid;
                     }
-                    this.connect(prev, next.id);
+                    this.link(prev, next.id);
                 });
                 this.renderGraph();
             }
 
-            addSpace(id, x, y, type, name = '', color = null) {
-                this.spaces[id] = { id, x, y, type, name, color, links: [] };
-            }
-
-            connect(a, b) {
-                this.spaces[a].links.push(b);
-                this.spaces[b].links.push(a);
-            }
+            addS(id, x, y, type, n = '', c = null) { this.spaces[id] = { id, x, y, type, n, c, links: [] }; }
+            link(a, b) { this.spaces[a].links.push(b); this.spaces[b].links.push(a); }
 
             initPawns() {
-                this.pawns.push({ id: 'i1', side: 'INVADER', pos: 'CENTER', color: '#ff4d4d', icon: '💀' });
-                this.pawns.push({ id: 'i2', side: 'INVADER', pos: 'CENTER', color: '#ff4d4d', icon: '💀' });
-                this.pawns.push({ id: 'i3', side: 'INVADER', pos: 'CENTER', color: '#ff4d4d', icon: '💀' });
-                CONFIG.forEach(b => {
-                    this.pawns.push({ id: `p-${b.id}`, side: 'FOREST', pos: b.id, color: b.c, icon: '🌳' });
-                });
+                this.pawns.push({ id: 'i1', s: 'INVADER', pos: 'CENTER', c: '#ff3838', icon: '💀' });
+                this.pawns.push({ id: 'i2', s: 'INVADER', pos: 'CENTER', c: '#ff3838', icon: '💀' });
+                this.pawns.push({ id: 'i3', s: 'INVADER', pos: 'CENTER', c: '#ff3838', icon: '💀' });
+                CONFIG.forEach(b => this.pawns.push({ id: `p-${b.id}`, s: 'FOREST', pos: b.id, c: b.c, icon: '🌲' }));
                 this.renderPawns();
             }
 
             renderGraph() {
-                const sL = document.getElementById('slots-layer');
-                const lL = document.getElementById('links-layer');
+                const sL = document.getElementById('layer-slots');
+                const lL = document.getElementById('layer-links');
                 const seenPairs = new Set();
-
                 Object.values(this.spaces).forEach(s => {
                     s.links.forEach(lid => {
-                        const pair = [s.id, lid].sort().join(':');
-                        if (!seenPairs.has(pair)) {
-                            seenPairs.add(pair);
+                        const key = [s.id, lid].sort().join(':');
+                        if (!seenPairs.has(key)) {
+                            seenPairs.add(key);
                             const t = this.spaces[lid];
                             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                             line.setAttribute('x1', s.x); line.setAttribute('y1', s.y);
                             line.setAttribute('x2', t.x); line.setAttribute('y2', t.y);
-                            line.setAttribute('class', 'link-line');
+                            line.setAttribute('stroke', '#fff'); line.setAttribute('stroke-width', '2');
                             lL.appendChild(line);
                         }
                     });
-
                     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                     g.setAttribute('class', 'slot');
-                    g.addEventListener('click', (e) => this.onSpaceClick(s.id));
+                    g.setAttribute('id', `group-${s.id}`);
+                    g.addEventListener('click', () => this.clickSpace(s.id));
 
                     const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                     c.setAttribute('cx', s.x); c.setAttribute('cy', s.y);
                     c.setAttribute('r', s.type === 'HOME' ? 45 : (s.type === 'BIOME' ? 35 : 18));
-                    c.setAttribute('id', `circle-${s.id}`);
-                    if (s.color) c.style.stroke = s.color;
+                    c.setAttribute('id', `circ-${s.id}`);
+                    if (s.c) c.style.stroke = s.c;
                     g.appendChild(c);
 
-                    // Large click target
+                    // Large hit box
                     const hit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                     hit.setAttribute('cx', s.x); hit.setAttribute('cy', s.y);
                     hit.setAttribute('r', 40); hit.setAttribute('fill', 'transparent');
                     g.appendChild(hit);
-
                     sL.appendChild(g);
                 });
             }
 
             renderPawns() {
-                const layer = document.getElementById('pawns-layer');
+                const layer = document.getElementById('layer-pawns');
                 layer.innerHTML = '';
-                const posGroups = {};
-                this.pawns.forEach(p => { 
-                    posGroups[p.pos] = posGroups[p.pos] || []; 
-                    posGroups[p.pos].push(p); 
-                });
+                const groups = {};
+                this.pawns.forEach(p => { groups[p.pos] = groups[p.pos] || []; groups[p.pos].push(p); });
 
-                Object.entries(posGroups).forEach(([sid, ps]) => {
-                    const space = this.spaces[sid];
-                    ps.forEach((p, idx) => {
-                        // Offset pawns so they never overlap purely
-                        const ox = (idx - (ps.length-1)/2) * 35;
-                        const oy = ps.length > 2 ? (idx % 2 === 0 ? -15 : 15) : 0;
+                Object.entries(groups).forEach(([sid, ps]) => {
+                    const spc = this.spaces[sid];
+                    ps.forEach((p, i) => {
+                        const ox = (i - (ps.length-1)/2) * 35;
+                        const oy = ps.length > 2 ? (i % 2 === 0 ? -15 : 15) : 0;
                         
-                        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                        g.setAttribute('class', `pawn-group`);
-                        if (this.selected === p) g.classList.add('pawn-selected');
-                        if (this.phase === 'PIECE' && p.side === this.turn) g.classList.add('pawn-can-move');
+                        // OUTER G: For Translation (Fixes the teleport bug)
+                        const outer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                        outer.setAttribute('transform', `translate(${spc.x + ox}, ${spc.y + oy})`);
+                        outer.setAttribute('class', 'pawn-outer');
                         
-                        // Use transform to move pawns
-                        g.setAttribute('transform', `translate(${space.x + ox}, ${space.y + oy})`);
-                        
-                        // In SELECT_DEST phase, pawns should NOT block the slot under them
-                        if (this.phase === 'DEST') {
-                            g.style.pointerEvents = 'none'; 
+                        // INNER G: For Animation
+                        const inner = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                        if (this.selected === p) inner.classList.add('pawn-selected-eff');
+                        if (this.state === 'PAWN' && p.s === this.turn) inner.classList.add('jump-container');
+
+                        // Events
+                        if (this.state === 'MOVE') {
+                            outer.style.pointerEvents = 'none'; // CRITICAL: Allow click through to slots
                         } else {
-                            g.style.pointerEvents = 'all';
-                            g.addEventListener('click', (e) => {
-                                e.stopPropagation();
-                                this.onPawnClick(p);
-                            });
+                            outer.style.pointerEvents = 'all';
+                            outer.addEventListener('click', (e) => { e.stopPropagation(); this.clickPawn(p); });
                         }
 
                         const pth = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                         pth.setAttribute('d', 'M-20,20 L20,20 L15,-10 C15,-20 0,-35 0,-35 C0,-35 -15,-20 -15,-10 Z');
-                        pth.setAttribute('fill', p.color); pth.setAttribute('stroke', '#fff'); pth.setAttribute('stroke-width', '3');
-                        g.appendChild(pth);
+                        pth.setAttribute('fill', p.c); pth.setAttribute('stroke', '#fff'); pth.setAttribute('stroke-width', '2');
+                        inner.appendChild(pth);
 
-                        const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        txt.setAttribute('y', -20); txt.setAttribute('text-anchor', 'middle');
-                        txt.setAttribute('fill', '#fff'); txt.setAttribute('font-size', '20'); txt.setAttribute('font-weight', '900');
-                        txt.textContent = p.icon; txt.style.pointerEvents = 'none';
-                        g.appendChild(txt);
+                        const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        t.setAttribute('y', -18); t.setAttribute('text-anchor', 'middle');
+                        t.setAttribute('fill', '#fff'); t.setAttribute('font-size', '18');
+                        t.textContent = p.icon; t.style.pointerEvents = 'none';
+                        inner.appendChild(t);
 
-                        layer.appendChild(g);
+                        outer.appendChild(inner);
+                        layer.appendChild(outer);
                     });
                 });
             }
 
-            bindEvents() {
-                document.getElementById('roll-btn').addEventListener('click', () => this.rollDice());
-            }
+            bind() { document.getElementById('roll-btn').onclick = () => this.roll(); }
 
-            async rollDice() {
-                if (this.phase !== 'ROLL') return;
-                const diceEl = document.getElementById('dice-face');
+            async roll() {
+                if (this.state !== 'ROLL') return;
+                const dV = document.getElementById('dice-view');
                 const faces = ['⚀','⚁','⚂','⚃','⚄','⚅'];
                 for(let i=0; i<15; i++) {
-                    diceEl.innerText = faces[Math.floor(Math.random()*6)];
+                    dV.innerText = faces[Math.floor(Math.random()*6)];
                     await new Promise(r => setTimeout(r, 60));
                 }
                 this.dice = Math.floor(Math.random() * 6) + 1;
-                diceEl.innerText = faces[this.dice-1];
-                this.phase = 'PIECE';
-                this.log(`Tirou ${this.dice}! Escolha seu peão que está pulando.`, this.turn.toLowerCase());
-                this.refreshUI();
+                dV.innerText = faces[this.dice-1];
+                this.state = 'PAWN';
+                this.log(`Tirou ${this.dice}! Escolha seu boneco pulante.`, this.turn.toLowerCase());
+                this.updateUI();
             }
 
-            onPawnClick(pawn) {
-                if (this.phase !== 'PIECE' || pawn.side !== this.turn) return;
+            clickPawn(pawn) {
+                if (this.state !== 'PAWN' || pawn.s !== this.turn) return;
                 this.selected = pawn;
-                this.calcPossibleDests(pawn.pos, this.dice);
-                
+                this.calc(pawn.pos, this.dice);
                 if (this.dests.length === 0) {
-                    this.log("Sem casas para andar! Perdendo vez.", 'system');
+                    this.log("Sem jogadas! Perdeu a vez.", 'system');
                     this.endTurn();
                     return;
                 }
-                this.phase = 'DEST';
-                this.refreshUI();
-                this.log(`Escolha uma das casas brancas piscando!`, 'system');
+                this.state = 'MOVE';
+                this.updateUI();
+                this.log(`Clique na casa brilhante!`, 'system');
             }
 
-            calcPossibleDests(startId, dist) {
+            calc(curr, dist) {
                 this.dests = [];
-                let q = [{ id: startId, d: 0, path: [startId] }];
-                let finalDests = new Set();
-
+                let q = [{ id: curr, d: 0, path: [curr] }];
+                let found = new Set();
                 while(q.length > 0) {
                     let { id, d, path } = q.shift();
-                    if (d === dist) {
-                        finalDests.add(id);
-                        continue;
-                    }
+                    if (d === dist) { found.add(id); continue; }
                     this.spaces[id].links.forEach(nid => {
-                        // Standard rule: Cannot move back immediately to the node you just came from in same turn
                         if (path.length < 2 || nid !== path[path.length - 2]) {
                             q.push({ id: nid, d: d + 1, path: [...path, nid] });
                         }
                     });
                 }
-                this.dests = Array.from(finalDests);
+                this.dests = Array.from(found).filter(id => id !== curr);
             }
 
-            onSpaceClick(sid) {
-                if (this.phase !== 'DEST' || !this.dests.includes(sid)) return;
-                
+            clickSpace(id) {
+                if (this.state !== 'MOVE' || !this.dests.includes(id)) return;
                 const p = this.selected;
-                p.pos = sid;
-                
-                // Combat (Eat rival)
-                const rival = this.pawns.find(x => x.pos === sid && x.side !== p.side);
-                if (rival) {
-                    this.log(`${p.side === 'INVADER' ? 'Invasor' : 'Natureza'} capturou uma peça rival!`, 'system');
-                    this.pawns = this.pawns.filter(x => x !== rival);
+                p.pos = id;
+                const riv = this.pawns.find(x => x.pos === id && x.s !== p.s);
+                if (riv) {
+                    this.log(`${p.s === 'INVADER' ? 'Invasor' : 'Natureza'} capturou o rival!`, 'system');
+                    this.pawns = this.pawns.filter(x => x !== riv);
                 }
-
                 this.endTurn();
             }
 
             endTurn() {
                 this.turn = (this.turn === 'INVADER' ? 'FOREST' : 'INVADER');
-                this.phase = 'ROLL';
-                this.selected = null;
-                this.dests = [];
-                this.refreshUI();
-                this.checkWin();
+                this.state = 'ROLL'; this.selected = null; this.dests = [];
+                this.updateUI(); this.check();
             }
 
-            refreshUI() {
-                // Button
-                document.getElementById('roll-btn').disabled = (this.phase !== 'ROLL');
+            updateUI() {
+                document.getElementById('roll-btn').disabled = (this.state !== 'ROLL');
+                const d = document.getElementById('display-turn');
+                d.innerText = this.turn === 'INVADER' ? 'TURNO: INVASORES' : 'TURNO: NATUREZA';
+                d.style.color = this.turn === 'INVADER' ? 'var(--invader)' : 'var(--forest)';
                 
-                // Status
-                const disp = document.getElementById('turn-display');
-                disp.innerText = this.turn === 'INVADER' ? 'TURNO: INVASORES' : 'TURNO: NATUREZA';
-                disp.style.color = this.turn === 'INVADER' ? 'var(--invader-color)' : 'var(--forest-color)';
-                
-                // Hint
-                const hint = document.getElementById('hint');
-                if (this.phase === 'ROLL') hint.innerText = "ROLE O DADO";
-                else if (this.phase === 'PIECE') hint.innerText = "CLIQUE NO PEÃO QUE ESTÁ PULANDO";
-                else hint.innerText = "CLIQUE NA CASA BRANCA PISCANDO";
+                const h = document.getElementById('hint-box');
+                if (this.state === 'ROLL') h.innerText = "ROLE O DADO";
+                else if (this.state === 'PAWN') h.innerText = "CLIQUE NO BONECO PULANTE";
+                else h.innerText = "CLIQUE NA CASA BRILHANTE";
 
-                // Highlights
-                document.querySelectorAll('circle').forEach(c => c.classList.remove('dest-highlight'));
-                this.dests.forEach(id => {
-                    const el = document.getElementById(`circle-${id}`);
-                    if (el) el.classList.add('dest-highlight');
-                });
+                document.querySelectorAll('.slot').forEach(s => s.classList.remove('valid-target'));
+                this.dests.forEach(id => document.getElementById(`group-${id}`).classList.add('valid-target'));
 
                 this.renderPawns();
             }
 
             log(m, c) {
-                const log = document.getElementById('log-area');
+                const log = document.getElementById('game-log');
                 const div = document.createElement('div');
-                div.style.padding = '5px 0';
-                div.style.borderBottom = '1px solid #333';
-                div.style.color = c === 'invader' ? '#ff7979' : (c === 'forest' ? '#78e08f' : '#f6b93b');
-                div.innerText = `> ${m}`;
-                log.prepend(div);
+                div.style.padding = '5px 0'; div.style.color = c === 'invader' ? '#ff7979' : (c === 'forest' ? '#78e08f' : '#f6b93b');
+                div.innerText = `> ${m}`; log.prepend(div);
             }
 
-            checkWin() {
-                const f = this.pawns.filter(x => x.side === 'FOREST').length;
-                const i = this.pawns.filter(x => x.side === 'INVADER').length;
-                if (i === 0) this.win("A NATUREZA VENCEU!");
-                if (f === 0) this.win("OS INVASORES VENCERAM!");
+            check() {
+                const f = this.pawns.filter(x => x.s === 'FOREST').length;
+                const i = this.pawns.filter(x => x.s === 'INVADER').length;
+                if (i === 0) this.win("NATUREZA VENCEU!");
+                if (f === 0) this.win("INVASORES VENCERAM!");
             }
 
-            win(t) {
-                document.getElementById('win-title').innerText = t;
-                document.getElementById('win-msg').style.display = 'flex';
-            }
+            win(t) { document.getElementById('win-txt').innerText = t; document.getElementById('modal-win').style.display = 'flex'; }
         }
 
-        window.onload = () => new GameEngine();
+        window.onload = () => new Game();
     </script>
 </body>
 </html>
