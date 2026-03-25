@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biomas em Guerra: A Grande União</title>
+    <title>Biomas em Guerra: O Grande União</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Outfit:wght@400;900&display=swap" rel="stylesheet">
@@ -11,8 +11,7 @@
         :root {
             --guardian-color: #00ff88;
             --invader-color: #ff3333;
-            --bg-color: #06080a;
-            --path-color: #1a1c22;
+            --bg-color: #0c0d12;
             --highlight: #f1c40f;
         }
 
@@ -44,13 +43,15 @@
         #board-viewer {
             grid-area: board;
             position: relative;
-            background: radial-gradient(circle, #0d1117 0%, #000 100%);
+            background-image: url('mapa.png'); /* O usuário deve salvar a imagem com este nome */
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 10px;
         }
-        #game-svg { width: 95%; height: 95%; max-width: 85vh; }
+        #game-svg { width: 95%; height: 95%; max-width: 85vh; cursor: crosshair; }
 
         #sidebar {
             grid-area: sidebar;
@@ -61,10 +62,11 @@
             flex-direction: column;
             gap: 15px;
             box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            z-index: 50;
         }
 
         .ui-box { background: #000; border-radius: 15px; padding: 20px; border: 1px solid #333; text-align: center; }
-        #dice-face { font-size: 5rem; margin-bottom: 5px; font-family: 'Fredoka One'; color: var(--highlight); }
+        #dice-face { font-size: 5rem; margin-bottom: 5px; font-family: 'Fredoka One'; color: var(--highlight); transition: transform 0.1s; }
         
         .btn { 
             width: 100%; padding: 18px; border-radius: 12px; border: none; 
@@ -79,29 +81,24 @@
 
         #log-window { flex: 1; background: #000; border-radius: 10px; padding: 12px; overflow-y: auto; font-size: 0.8rem; color: #777; border: 1px solid #222; }
 
-        /* Board Styling */
-        .node-path { fill: var(--path-color); stroke: #444; stroke-width: 2; transition: 0.2s; cursor: pointer; }
-        .node-path:hover { fill: #555; r: 15; }
-        
-        .base-circle { fill: #000; stroke-width: 6; cursor: pointer; }
-        .base-label { font-family: 'Fredoka One'; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
-
-        .connection { stroke: #1a1c22; stroke-width: 10; stroke-linecap: round; pointer-events: none; }
-        .ring-path { stroke: rgba(0,255,136,0.1); stroke-width: 80; fill: none; pointer-events: none; }
+        /* Board Elements (Transparent clickable areas) */
+        .node-path { fill: rgba(255,255,255,0.05); stroke: none; pointer-events: all; }
+        .node-path:hover { fill: rgba(255,255,255,0.2); }
         
         .target-active { 
-            stroke: #fff !important; stroke-width: 12 !important; 
+            stroke: #fff !important; stroke-width: 8 !important; 
             stroke-dasharray: 10 5; animation: dashRotate 3s linear infinite; 
-            fill: rgba(255,255,255,0.4) !important; r: 40 !important;
+            fill: rgba(255,255,255,0.3) !important; r: 35 !important;
+            pointer-events: all !important;
         }
         @keyframes dashRotate { from { stroke-dashoffset: 60; } to { stroke-dashoffset: 0; } }
 
-        /* Pawns */
-        .pawn-container { pointer-events: all; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .pawn-visual { filter: drop-shadow(0 5px 15px rgba(0,0,0,1)); cursor: pointer; }
-        .pawn-active { animation: pawnHop 0.8s infinite alternate cubic-bezier(0.45, 0.05, 0.55, 0.95); }
+        /* Pawns Styles */
+        .pawn-container { pointer-events: all; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .pawn-visual { filter: drop-shadow(0 5px 15px rgba(0,0,0,0.8)); cursor: pointer; }
+        .pawn-active { animation: pawnHop 0.6s infinite alternate cubic-bezier(0.45, 0.05, 0.55, 0.95); }
         @keyframes pawnHop { from { transform: translateY(0); } to { transform: translateY(-20px); } }
-        .pawn-selected { filter: drop-shadow(0 0 25px #fff); transform: translateY(-25px) scale(1.4); z-index: 1000; }
+        .pawn-selected { filter: drop-shadow(0 0 20px #fff); transform: translateY(-30px) scale(1.4); z-index: 1000; }
 
         #win-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; }
     </style>
@@ -114,11 +111,7 @@
 
     <div id="board-viewer">
         <svg id="game-svg" viewBox="0 0 1000 1000">
-            <!-- Camadas -->
-            <circle cx="500" cy="500" r="420" class="ring-path" />
-            <g id="lay-links" opacity="0.4"></g>
-            <g id="lay-bases"></g>
-            <g id="lay-nodes"></g>
+            <g id="lay-nodes"></g> <!-- Todas as casas invisíveis clicáveis em cima da imagem -->
             <g id="lay-pawns"></g>
         </svg>
     </div>
@@ -140,20 +133,21 @@
     </div>
 
     <script>
+        // Coordenadas aproximadas para as caixas do mapa enviado
         const MAP_DATA = [
-            { id: 'AMZ', n: 'Amazônia', c: '#00ff88', a: -90 },
-            { id: 'CER', n: 'Cerrado', c: '#ffbb33', a: -30 },
-            { id: 'CAA', n: 'Caatinga', c: '#ff7733', a: 30 },
-            { id: 'MAT', n: 'Mata Atlântica', c: '#00ccff', a: 90 },
-            { id: 'COS', n: 'Costão', c: '#33d6ff', a: 150 },
-            { id: 'PAN', n: 'Pantanal', c: '#a29bfe', a: 210 }
+            { id: 'PAN', n: 'Pantanal', c: '#ffbb33', a: -55 },
+            { id: 'CER', n: 'Cerrado', c: '#ff9911', a: 0 },
+            { id: 'AMZ', n: 'Amazônia', c: '#00ff88', a: 50 },
+            { id: 'MAT', n: 'Mata Atlântica', c: '#00ccff', a: 115 },
+            { id: 'COS', n: 'Costão Rochoso', c: '#33d6ff', a: 190 },
+            { id: 'CAA', n: 'Caatinga', c: '#ff7733', a: 290 }
         ];
 
         class JogoEngine {
             constructor() {
                 this.turn = 'INVADER'; 
                 this.dice = 0;
-                this.state = 'ROLL'; // ROLL, PAWN, DEST
+                this.state = 'ROLL'; 
                 this.nodes = {};
                 this.pawns = [];
                 this.selected = null;
@@ -166,36 +160,46 @@
             }
 
             initGraph() {
-                this.add('CENTER', 500, 500, 'BASE_HIVE');
+                // "Start" Center
+                this.add('START', 485, 475, 'BASE'); // Ajustado para bater com a imagem
+
                 MAP_DATA.forEach(b => {
-                    let prev = 'CENTER';
-                    // Radial (4 steps)
+                    let prev = 'START';
+                    const radius = 350; // Ajustado para bater com as caixas
+                    
+                    // Radiais (4 passos por trilha na imagem)
                     for (let i = 1; i <= 4; i++) {
                         const sid = `r-${b.id}-${i}`;
-                        const dist = (420 / 5) * i;
-                        const x = 500 + dist * Math.cos(b.a * Math.PI / 180);
-                        const y = 500 + dist * Math.sin(b.a * Math.PI / 180);
-                        this.add(sid, x, y, 'DOT');
+                        const d = (radius / 5) * i;
+                        // Ajuste manual de ângulo e distância para casar com a arte pixelada
+                        const x = 485 + d * Math.cos(b.a * Math.PI / 180);
+                        const y = 475 + d * Math.sin(b.a * Math.PI / 180);
+                        this.add(sid, x, y, 'STEP');
                         this.link(prev, sid);
                         prev = sid;
                     }
-                    this.add(b.id, 500 + 420 * Math.cos(b.a * Math.PI / 180), 500 + 420 * Math.sin(b.a * Math.PI / 180), 'BASE_BIOME', b.n, b.c);
+
+                    // Bioma Base (Fim da trilha radial)
+                    const bx = 485 + radius * Math.cos(b.a * Math.PI / 180);
+                    const by = 475 + radius * Math.sin(b.a * Math.PI / 180);
+                    this.add(b.id, bx, by, 'BIOME', b.n, b.c);
                     this.link(prev, b.id);
                 });
 
-                // Circular UNION (Shorted to 3 steps to "juntar" os biomas)
+                // Trilhas Circulares (7 passos entre biomas na imagem)
                 MAP_DATA.forEach((b, i) => {
                     const next = MAP_DATA[(i + 1) % 6];
                     let prev = b.id;
-                    const steps = 3; // Reduzido para os biomas ficarem mais próximos/unidos
+                    const steps = 7; 
                     for (let j = 1; j <= steps; j++) {
                         const sid = `c-${b.id}-${next.id}-${j}`;
                         const startA = b.a;
-                        const endA = (i === 5 ? (b.a + 60) : next.a);
+                        const endA = (i === 5 ? (b.a + 125) : next.a); // Correção de ângulo para fechar o círculo
                         const angle = (startA + (endA - startA) * (j / (steps + 1))) * Math.PI / 180;
-                        const x = 500 + 420 * Math.cos(angle);
-                        const y = 500 + 420 * Math.sin(angle);
-                        this.add(sid, x, y, 'DOT');
+                        const dist = 350;
+                        const x = 485 + dist * Math.cos(angle);
+                        const y = 475 + dist * Math.sin(angle);
+                        this.add(sid, x, y, 'STEP');
                         this.link(prev, sid);
                         prev = sid;
                     }
@@ -209,7 +213,7 @@
 
             initPawns() {
                 for (let i = 1; i <= 3; i++) {
-                    this.pawns.push({ id: `i${i}`, s: 'INVADER', node: 'CENTER', c: '#ff3333', i: '👹' });
+                    this.pawns.push({ id: `i${i}`, s: 'INVADER', node: 'START', c: '#ff3333', i: '👹' });
                 }
                 MAP_DATA.forEach(b => {
                     this.pawns.push({ id: `g-${b.id}`, s: 'GUARD', node: b.id, c: b.c, i: '🌿' });
@@ -218,55 +222,19 @@
             }
 
             render() {
-                const nL = document.getElementById('lay-nodes');
-                const bL = document.getElementById('lay-bases');
-                const lL = document.getElementById('lay-links');
-                const seenPairs = new Set();
-
+                const layer = document.getElementById('lay-nodes');
                 Object.values(this.nodes).forEach(n => {
-                    n.links.forEach(lid => {
-                        const key = [n.id, lid].sort().join(':');
-                        if (!seenPairs.has(key)) {
-                            seenPairs.add(key);
-                            const t = this.nodes[lid];
-                            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                            line.setAttribute('x1', n.x); line.setAttribute('y1', n.y);
-                            line.setAttribute('x2', t.x); line.setAttribute('y2', t.y);
-                            line.setAttribute('class', 'connection');
-                            lL.appendChild(line);
-                        }
-                    });
-
                     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                     g.setAttribute('class', 'node');
                     g.addEventListener('click', () => this.onClickSpace(n.id));
 
                     const circ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                     circ.setAttribute('cx', n.x); circ.setAttribute('cy', n.y);
-                    
-                    if (n.t === 'DOT') {
-                        circ.setAttribute('r', '14'); circ.setAttribute('class', 'node-path');
-                    } else {
-                        circ.setAttribute('r', n.t === 'BASE_HIVE' ? '65' : '50');
-                        circ.setAttribute('class', 'base-circle'); circ.style.stroke = n.c || '#ff3333';
-                    }
+                    circ.setAttribute('r', n.t === 'BASE' ? '60' : (n.t === 'BIOME' ? '40' : '23'));
+                    circ.setAttribute('class', 'node-path');
                     circ.setAttribute('id', `c-${n.id}`);
                     g.appendChild(circ);
-
-                    if (n.n) {
-                        const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        t.setAttribute('x', n.x); t.setAttribute('y', n.y + (n.y > 500 ? 80 : -70));
-                        t.setAttribute('fill', n.c); t.setAttribute('text-anchor', 'middle');
-                        t.setAttribute('class', 'base-label'); t.textContent = n.n;
-                        g.appendChild(t);
-                    }
-                    
-                    const hit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                    hit.setAttribute('cx', n.x); hit.setAttribute('cy', n.y);
-                    hit.setAttribute('r', 45); hit.setAttribute('fill', 'transparent');
-                    g.appendChild(hit);
-
-                    nL.appendChild(g);
+                    layer.appendChild(g);
                 });
             }
 
@@ -276,8 +244,8 @@
                 const locs = {};
                 this.pawns.forEach(p => { locs[p.node] = locs[p.node] || []; locs[p.node].push(p); });
 
-                Object.entries(locs).forEach(([nid, ps]) => {
-                    const node = this.nodes[nid];
+                Object.entries(locs).forEach(([sid, ps]) => {
+                    const node = this.nodes[sid];
                     ps.forEach((p, idx) => {
                         const ox = (idx - (ps.length-1)/2) * 35;
                         const oy = ps.length > 2 ? (idx % 2 === 0 ? -15 : 15) : 0;
@@ -297,6 +265,7 @@
                             outerG.addEventListener('click', (e) => { e.stopPropagation(); this.onClickPawn(p); });
                         }
 
+                        // Formato de Pião Real
                         const pth = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                         pth.setAttribute('d', 'M-22,25 L22,25 L18,-15 C15,-30 0,-45 0,-45 C0,-45 -15,-30 -18,-15 Z');
                         pth.setAttribute('fill', p.c); pth.setAttribute('stroke', '#fff'); pth.setAttribute('stroke-width', '3');
@@ -326,7 +295,6 @@
                 this.dice = Math.floor(Math.random() * 6) + 1;
                 dV.innerText = fs[this.dice-1];
                 this.state = 'PAWN';
-                this.log(`Rolou: ${this.dice}. Selecione um boneco!`, this.turn.toLowerCase());
                 this.ui();
             }
 
@@ -334,12 +302,7 @@
                 if (this.state !== 'PAWN' || p.s !== this.turn) return;
                 this.selected = p;
                 this.calc(p.node, this.dice);
-                if (this.dests.length === 0) {
-                    this.log("Sem jogadas. Passou o turno!", 'system');
-                    this.endTurn(); return;
-                }
                 this.state = 'DEST';
-                this.log(`Mova para a casa brilhante.`, 'system');
                 this.ui();
             }
 
@@ -365,7 +328,6 @@
                 p.node = id;
                 const rival = this.pawns.find(x => x.node === id && x.s !== p.s);
                 if (rival) {
-                    this.log(`${this.turn === 'INVADER' ? 'Invasor' : 'Guardião'} capturou o oponente!`, 'system');
                     this.pawns = this.pawns.filter(x => x !== rival);
                 }
                 this.endTurn();
@@ -385,21 +347,14 @@
                 const h = document.getElementById('hint-msg');
                 if (this.state === 'ROLL') h.innerText = "ROLE O DADO";
                 else if (this.state === 'PAWN') h.innerText = "CLIQUE NO PIÃO QUE ESTÁ PULANDO";
-                else h.innerText = "CLIQUE NA CASA BRANCA QUE BRILHA";
+                else h.innerText = "CLIQUE NA CAIXA QUE ESTÁ BRILHANDO";
 
-                document.querySelectorAll('.node-path, .base-circle').forEach(c => c.classList.remove('target-active'));
+                document.querySelectorAll('.node-path').forEach(c => c.classList.remove('target-active'));
                 this.dests.forEach(id => {
                     const el = document.getElementById(`c-${id}`);
                     if (el) el.classList.add('target-active');
                 });
                 this.drawPawns();
-            }
-
-            log(m, c) {
-                const l = document.getElementById('log-window');
-                const d = document.createElement('div');
-                d.style.padding = '4px 0'; d.style.color = c === 'invader' ? '#ff7675' : (c === 'guard' ? '#55efc4' : '#fdcb6e');
-                d.innerText = `> ${m}`; l.prepend(d);
             }
 
             check() {
