@@ -44,7 +44,8 @@
             grid-area: board;
             position: relative;
             background-color: #579bc1;
-            background-image: url('mapa.png');
+            /* Procura o mapa na pasta local OU na pasta de cima */
+            background-image: url('mapa.png'), url('../mapa.png');
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
@@ -85,7 +86,7 @@
         .node-tile { fill: rgba(255,255,255,0.01); transition: 0.2s; cursor: pointer; stroke: none; }
         .node-tile:hover { fill: rgba(255,255,255,0.1); }
         
-        .debuff-marker { stroke: rgba(255,0,0,0.4) !important; stroke-width: 5 !important; }
+        .debuff-marker { stroke: rgba(255,0,0,0.6) !important; stroke-width: 4 !important; }
 
         .target-active { 
             stroke: #fff !important; stroke-width: 12 !important; 
@@ -113,7 +114,7 @@
     </header>
 
     <div id="board-viewer">
-        <div id="debuff-alert">⚠️ CAIU NO DEBUFF! VOLTOU 2 CASAS!</div>
+        <div id="debuff-alert">⚠️ CAIU NO DEBUFF! VOLTOU PARA A ÚLTIMA CASA!</div>
         <svg id="game-svg" viewBox="0 0 1000 1000">
             <g id="lay-nodes"></g> 
             <g id="lay-pawns"></g>
@@ -123,7 +124,7 @@
     <div id="sidebar">
         <div class="ui-box">
             <div id="dice-view">🎲</div>
-            <button class="btn" id="btn-roll">ROLAR DADO</button>
+            <button class="btn" id="roll-btn">ROLAR DADO</button>
         </div>
 
         <div id="game-hint" class="hint">ROLE O DADO</div>
@@ -138,12 +139,12 @@
 
     <script>
         const BIOMAS = [
-            { id: 'CAA', n: 'Caatinga', x: 250, y: 150 },
-            { id: 'PAN', n: 'Pantanal', x: 745, y: 135 },
+            { id: 'CAA', n: 'Caatinga', x: 250, y: 152 },
+            { id: 'PAN', n: 'Pantanal', x: 742, y: 135 },
             { id: 'CER', n: 'Cerrado', x: 890, y: 520 },
-            { id: 'AMZ', n: 'Amazônia', x: 745, y: 885 },
+            { id: 'AMZ', n: 'Amazônia', x: 744, y: 885 },
             { id: 'MAT', n: 'Mata Atlântica', x: 260, y: 885 },
-            { id: 'COS', n: 'Costão Rochoso', x: 130, y: 520 }
+            { id: 'COS', n: 'Costão Rochoso', x: 135, y: 520 }
         ];
 
         class JogoEngine {
@@ -197,8 +198,7 @@
                         const x = 485 + d * Math.cos(a);
                         const y = 480 + d * Math.sin(a);
 
-                        // CASINHAS VERMELHAS (DEBUFFS) - Na imagem são as casas intermediárias
-                        const isDebuff = (j === 4); // Casinha do meio no anel circular
+                        const isDebuff = (j === 1 || j === 4 || j === 7); // Mais debuffs baseados nas caixas vermelhas do mapa
                         this.add(sid, x, y, isDebuff ? 'DEBUFF' : 'STEP');
                         this.link(prevNode, sid);
                         prevNode = sid;
@@ -212,10 +212,9 @@
             link(a, b) { this.nodes[a].links.push(b); this.nodes[b].links.push(a); }
 
             setupPawns() {
-                // Todos os jogadores começam no START conforme solicitado
                 for (let i = 1; i <= 3; i++) {
-                    this.pawns.push({ id: `i${i}`, side: 'INVADER', node: 'START', color: '#ff3333', i: '👹', prev: 'START' });
-                    this.pawns.push({ id: `g${i}`, side: 'GUARD', node: 'START', color: '#27ae60', i: '🛡️', prev: 'START' });
+                    this.pawns.push({ id: `i${i}`, side: 'INVADER', node: 'START', color: '#ff3333', i: '👹' });
+                    this.pawns.push({ id: `g${i}`, side: 'GUARD', node: 'START', color: '#27ae60', i: '🛡️' });
                 }
                 this.renderPawns();
             }
@@ -318,15 +317,14 @@
                 const oldPos = p.node;
                 p.node = id;
 
-                // LOGICA DE DEBUFF (AS CASINHAS VERMELHAS)
                 if (this.nodes[id].type === 'DEBUFF') {
                     document.getElementById('debuff-alert').style.display = 'block';
                     setTimeout(() => {
                         document.getElementById('debuff-alert').style.display = 'none';
-                        p.node = oldPos; // Volta para onde estava (Debuff de mandar pro inicio/voltar)
+                        p.node = oldPos; 
                         this.renderPawns();
-                    }, 1500);
-                    this.log("Caiu na casinha vermelha! Voltou para o início da trilha.", 'system');
+                    }, 1200);
+                    this.log("⚠️ DEBUFF: Voltou para a última casa!", 'system');
                 }
 
                 const riv = this.pawns.find(x => x.node === id && x.side !== p.side);
@@ -347,7 +345,7 @@
                 document.getElementById('btn-roll').disabled = (this.state !== 'ROLL');
                 const t = document.getElementById('stat-turn');
                 t.innerText = this.turn === 'INVADER' ? 'TURNO: INVASORES' : 'TURNO: GUARDIÕES';
-                t.style.color = this.turn === 'INVADER' ? 'var(--invader)' : 'var(--debuff)';
+                t.style.color = this.turn === 'INVADER' ? 'var(--invader)' : '#27ae60';
                 const h = document.getElementById('game-hint');
                 if (this.state === 'ROLL') h.innerText = "ROLE O DADO";
                 else if (this.state === 'PICK') h.innerText = "CLIQUE NO PIÃO QUE ESTÁ PULANDO";
@@ -368,8 +366,6 @@
             }
 
             checkVictory() {
-                // Ganha quem chegar no bioma destino ou eliminar todos?
-                // Vamos manter eliminacao por enquanto.
                 const g = this.pawns.filter(x => x.side === 'GUARD').length;
                 const i = this.pawns.filter(x => x.side === 'INVADER').length;
                 if (i === 0) this.win("GUARDIÕES VENCERAM!");
