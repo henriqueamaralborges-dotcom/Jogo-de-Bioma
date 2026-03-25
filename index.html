@@ -3,346 +3,216 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biomas em Guerra: Tabuleiro de Trilha Real</title>
+    <title>Biomas em Guerra: Trilha Extrema</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Outfit:wght@400;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --board-color: #2c3e50;
-            --path-active: #f1c40f;
-            --forest-side: #27ae60;
-            --invader-side: #c0392b;
+            --forest-color: #26de81;
+            --invader-color: #eb4d4b;
+            --bg-color: #130f40;
         }
-
         * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            background: #111;
-            font-family: 'Outfit', sans-serif;
-            color: #fff;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Top Bar */
-        header {
-            height: 80px;
-            background: #1a1a1a;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 40px;
-            border-bottom: 3px solid #333;
-        }
-        .header-title { font-family: 'Fredoka One', cursive; font-size: 2rem; color: #fff; letter-spacing: 2px; }
-
-        #main-container {
-            display: flex;
-            flex: 1;
-            background: #151a20;
-        }
-
-        #board-wrapper {
-            flex: 1;
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: radial-gradient(circle, #2d3436 0%, #000 100%);
-        }
-
-        #svg-board {
-            width: 90vmin;
-            height: 90vmin;
-            filter: drop-shadow(0 20px 40px rgba(0,0,0,1));
-        }
-
-        /* UI Sidebar */
-        #sidebar {
-            width: 320px;
-            background: #1e272e;
-            border-left: 2px solid #3d3d3d;
-            padding: 25px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .dice-box {
-            background: #2f3542;
-            border-radius: 20px;
-            padding: 25px;
-            text-align: center;
-            border: 2px solid #57606f;
-        }
-        #dice-result {
-            font-family: 'Fredoka One';
-            font-size: 4rem;
-            margin: 10px 0;
-            color: #f1c40f;
-            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
-        .rolling-anim { animation: roll-jump 0.15s infinite alternate; }
-        @keyframes roll-jump { from { transform: scale(1); } to { transform: scale(1.1) rotate(10deg); } }
-
-        .btn {
-            background: #fff;
-            color: #000;
-            border: none;
-            padding: 15px;
-            border-radius: 12px;
-            font-weight: 900;
-            font-size: 1.1rem;
-            cursor: pointer;
-            text-transform: uppercase;
-            width: 100%;
-            transition: 0.2s;
-            box-shadow: 0 5px 0 #ccc;
-        }
-        .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 0 #ccc; }
-        .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #ccc; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
-
-        #game-log {
-            flex: 1;
-            background: rgba(0,0,0,0.4);
-            border-radius: 10px;
-            padding: 15px;
-            overflow-y: auto;
-            font-size: 0.9rem;
-            border: 1px solid #333;
-        }
-        .log-entry { margin-bottom: 8px; color: #ccc; }
-
-        .hint { font-size: 0.8rem; color: #f1c40f; text-align: center; font-weight: 900; }
-
-        /* SVG Components */
-        .slot { cursor: pointer; transition: 0.2s; }
-        .slot:hover circle { fill: #444; }
-        .slot-dot { fill: #222; stroke: #555; stroke-width: 2; }
-        .slot-highlight { stroke: #fff; stroke-width: 4; stroke-dasharray: 5 3; animation: dash 2s linear infinite; }
-        @keyframes dash { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 20; } }
-
-        /* PAWN (Piao) shape */
-        .pawn { cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .pawn:hover { transform: scale(1.2) translateY(-10px); }
-        .pawn-selected { filter: drop-shadow(0 0 20px #fff); transform: scale(1.3) translateY(-15px); }
+        body { background: var(--bg-color); font-family: 'Outfit', sans-serif; height: 100vh; display: flex; flex-direction: column; }
+        header { height: 70px; background: #000; display: flex; justify-content: space-between; align-items: center; padding: 0 40px; border-bottom: 3px solid #333; }
+        .logo { font-family: 'Fredoka One'; font-size: 1.8rem; color: #fff; }
         
-        #victory-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.95);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 1000; display: none;
-        }
+        #game-area { display: flex; flex: 1; }
+        #board-box { flex: 1; position: relative; background: radial-gradient(circle, #1e272e 0%, #000 100%); }
+        #svg-board { width: 100%; height: 100%; }
+
+        #ui-bar { width: 350px; background: #2f3542; border-left: 3px solid #000; padding: 30px; display: flex; flex-direction: column; gap: 20px; }
+        .dice-panel { background: #000; border-radius: 20px; padding: 30px; border: 2px solid #555; text-align: center; }
+        #dice-face { font-size: 5rem; font-family: 'Fredoka One'; color: #f1c40f; margin: 10px 0; }
+        .btn { width: 100%; padding: 20px; border-radius: 12px; border: none; font-family: 'Fredoka One'; font-size: 1.2rem; cursor: pointer; transition: 0.2s; }
+        .btn-roll { background: #fff; color: #000; box-shadow: 0 6px 0 #999; }
+        .btn-roll:hover { transform: translateY(-3px); box-shadow: 0 9px 0 #999; }
+        .btn-roll:active { transform: translateY(3px); box-shadow: 0 3px 0 #999; }
+        .btn:disabled { opacity: 0.3; transform: none !important; box-shadow: none !important; cursor: not-allowed; }
+
+        .hint-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border: 1px dashed #555; text-align: center; font-weight: 900; color: #f1c40f; }
+
+        #log { flex: 1; background: #000; border-radius: 10px; padding: 15px; overflow-y: auto; color: #aaa; font-size: 0.85rem; }
+
+        /* Board Elements */
+        .slot { cursor: pointer; }
+        .slot:hover circle { fill: #444; }
+        .active-dest { stroke: #fff; stroke-width: 5; stroke-dasharray: 6 4; animation: spin 20s linear infinite; }
+        @keyframes spin { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+
+        .pawn { cursor: pointer; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5)); transition: transform 0.3s; }
+        .pawn:hover { transform: translateY(-5px) scale(1.1); }
+        .pawn-selected { filter: drop-shadow(0 0 20px #fff); transform: translateY(-10px) scale(1.3); }
+        .pawn-glow { animation: pulse-glow 1s infinite alternate; }
+        @keyframes pulse-glow { from { opacity: 0.5; } to { opacity: 1; } }
+
+        #modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 9999; }
     </style>
 </head>
 <body>
     <header>
-        <div class="header-title">BIOMAS EM GUERRA</div>
-        <div id="turn-status" style="color:var(--forest-side); font-weight: 900; font-size: 1.2rem;">TURNO: NATUREZA</div>
+        <div class="logo">BIOMAS EM GUERRA</div>
+        <div id="turn-txt" style="color:var(--invader-color); font-weight: 900;">TURNO: INVASORES</div>
     </header>
 
-    <div id="main-container">
-        <div id="board-wrapper">
+    <div id="game-area">
+        <div id="board-box">
             <svg id="svg-board" viewBox="0 0 1000 1000">
-                <!-- Board Texture -->
-                <circle cx="500" cy="500" r="480" fill="#2c3e50" stroke="#1a1a1a" stroke-width="20" />
-                <path d="M500,500 L500,20" stroke="#1a1a1a" stroke-width="2" opacity="0.1" />
-
-                <g id="paths-layer"></g>
-                <g id="slots-layer"></g>
-                <g id="pawns-layer"></g>
+                <g id="links-group" opacity="0.15"></g>
+                <g id="slots-group"></g>
+                <g id="pawns-group"></g>
             </svg>
         </div>
 
-        <div id="sidebar">
-            <div class="dice-box">
-                <div id="dice-result">?</div>
-                <button class="btn" id="roll-btn">ROLAR DADO</button>
-                <p id="action-hint" class="hint" style="margin-top: 15px;">ROLE O DADO</p>
+        <div id="ui-bar">
+            <div class="dice-panel">
+                <div id="dice-face">🎲</div>
+                <button class="btn btn-roll" id="roll-btn">ROLAR DADO</button>
             </div>
-
-            <div id="game-log"></div>
+            
+            <div id="hint" class="hint-box">ROLE O DADO PARA COMECAR</div>
+            
+            <div id="log"></div>
         </div>
     </div>
 
-    <div id="victory-overlay">
-        <div style="text-align: center;">
-            <h1 id="victory-txt" style="font-size: 4rem; color: #fff;">VOCÊ VENCEU!</h1>
-            <button class="btn" style="width: auto; padding: 20px 50px; margin-top: 30px;" onclick="location.reload()">NOVA PARTIDA</button>
+    <div id="modal">
+        <div style="background:#000; padding: 50px; border-radius: 30px; text-align: center; border: 2px solid #555;">
+            <h1 id="win-txt" style="font-size: 3rem; margin-bottom: 20px;">VITORIA!</h1>
+            <button class="btn btn-roll" onclick="location.reload()">JOGAR DENOVO</button>
         </div>
     </div>
 
     <script>
         const BIOMES = [
-            { id: 'AMZ', n: 'Amazônia', c: '#27ae60', a: -90 },
-            { id: 'CER', n: 'Cerrado', c: '#f39c12', a: -30 },
-            { id: 'CAA', n: 'Caatinga', c: '#d35400', a: 30 },
-            { id: 'MAT', n: 'Mata Atlântica', c: '#2ecc71', a: 90 },
-            { id: 'COS', n: 'Costão', c: '#3498db', a: 150 },
-            { id: 'PAN', n: 'Pantanal', c: '#2980b9', a: 210 }
+            { id: 'AM', n: 'Amazônia', c: '#26de81', a: -90 },
+            { id: 'CE', n: 'Cerrado', c: '#f39c12', a: -30 },
+            { id: 'CA', n: 'Caatinga', c: '#e67e22', a: 30 },
+            { id: 'MA', n: 'Mata Atlântica', c: '#2ecc71', a: 90 },
+            { id: 'CO', n: 'Costão', c: '#3498db', a: 150 },
+            { id: 'PA', n: 'Pantanal', c: '#1e90ff', a: 210 }
         ];
 
-        class JogoDePiao {
+        class Core {
             constructor() {
-                this.turn = 'BIOMES'; // BIOMES or INVADER
+                this.turn = 'INVADER'; // Invasores começam para incentivar ação
                 this.dice = 0;
-                this.state = 'ROLL'; // ROLL, PAWN, SLOT
+                this.phase = 'ROLL'; // ROLL, PIECE, GO
                 this.slots = {};
                 this.pawns = [];
-                this.selectedPawn = null;
-                this.validDests = [];
+                this.selected = null;
+                this.dests = [];
 
-                this.setupBoard();
-                this.setupPawns();
+                this.buildMap();
+                this.spawn();
                 this.bind();
+                this.updateUI();
             }
 
-            setupBoard() {
-                // 1. Central Home
-                this.slots['CENTER'] = { id: 'CENTER', x: 500, y: 500, t: 'HOME', links: [] };
-
-                // 2. Radial Paths (Tracks)
+            buildMap() {
+                this.slots['CENTER'] = { id: 'CENTER', x: 500, y: 500, type: 'HOME', links: [] };
                 BIOMES.forEach(b => {
-                    const steps = 4;
-                    const radius = 420;
-                    let lastId = 'CENTER';
-
-                    for (let i = 1; i <= steps; i++) {
-                        const dist = (radius / (steps + 1)) * i;
-                        const x = 500 + dist * Math.cos(b.a * Math.PI / 180);
-                        const y = 500 + dist * Math.sin(b.a * Math.PI / 180);
+                    let last = 'CENTER';
+                    for (let i = 1; i <= 4; i++) {
                         const id = `r-${b.id}-${i}`;
-                        this.slots[id] = { id, x, y, t: 'DASH', links: [lastId] };
-                        this.slots[lastId].links.push(id);
-                        lastId = id;
+                        const d = (420 / 5) * i;
+                        const x = 500 + d * Math.cos(b.a * Math.PI / 180);
+                        const y = 500 + d * Math.sin(b.a * Math.PI / 180);
+                        this.slots[id] = { id, x, y, type: 'STEP', links: [last] };
+                        this.slots[last].links.push(id);
+                        last = id;
                     }
-
-                    // Biome Base (End of radial)
-                    const bx = 500 + radius * Math.cos(b.a * Math.PI / 180);
-                    const by = 500 + radius * Math.sin(b.a * Math.PI / 180);
-                    this.slots[b.id] = { id: b.id, x: bx, y: by, t: 'BASE', n: b.n, c: b.c, links: [lastId] };
-                    this.slots[lastId].links.push(b.id);
+                    const bId = b.id;
+                    const bx = 500 + 420 * Math.cos(b.a * Math.PI / 180);
+                    const by = 500 + 420 * Math.sin(b.a * Math.PI / 180);
+                    this.slots[bId] = { id: bId, x: bx, y: by, type: 'BIOME', name: b.n, color: b.c, links: [last] };
+                    this.slots[last].links.push(bId);
                 });
 
-                // 3. Circular Paths (Between biomes)
                 BIOMES.forEach((b, i) => {
                     const next = BIOMES[(i + 1) % 6];
-                    const steps = 6;
-                    let lastId = b.id;
-                    for (let j = 1; j <= steps; j++) {
-                        const t = j / (steps + 1);
-                        const startA = b.a * Math.PI / 180;
-                        const endA = (i === 5 ? 270 : next.a) * Math.PI / 180;
-                        const currA = startA + (endA - startA) * t;
-                        const dist = 420;
-                        const x = 500 + dist * Math.cos(currA);
-                        const y = 500 + dist * Math.sin(currA);
+                    let last = b.id;
+                    for (let j = 1; j <= 6; j++) {
                         const id = `c-${b.id}-${next.id}-${j}`;
-                        this.slots[id] = { id, x, y, t: 'DASH', links: [lastId] };
-                        this.slots[lastId].links.push(id);
-                        lastId = id;
+                        const a = (b.a + ( (i === 5 ? (b.a + 60) : next.a) - b.a) * (j / 7)) * Math.PI / 180;
+                        const x = 500 + 420 * Math.cos(a);
+                        const y = 500 + 420 * Math.sin(a);
+                        this.slots[id] = { id, x, y, type: 'STEP', links: [last] };
+                        this.slots[last].links.push(id);
+                        last = id;
                     }
-                    this.slots[lastId].links.push(next.id);
-                    this.slots[next.id].links.push(lastId);
+                    this.slots[last].links.push(next.id);
+                    this.slots[next.id].links.push(last);
                 });
 
-                this.renderSlots();
+                this.drawBoard();
             }
 
-            setupPawns() {
-                // Biomes start at their bases
+            spawn() {
+                this.pawns.push({ id: 'i1', side: 'INVADER', slot: 'CENTER', color: '#ff4d4d', icon: '💀' });
+                this.pawns.push({ id: 'i2', side: 'INVADER', slot: 'CENTER', color: '#ff4d4d', icon: '💀' });
+                this.pawns.push({ id: 'i3', side: 'INVADER', slot: 'CENTER', color: '#ff4d4d', icon: '💀' });
                 BIOMES.forEach(b => {
-                    this.pawns.push({ id: `p-${b.id}`, side: 'BIOMES', slot: b.id, color: b.c, icon: '🌳' });
+                    this.pawns.push({ id: `p-${b.id}`, side: 'FOREST', slot: b.id, color: b.c, icon: '🌲' });
                 });
-                // 3 Invasores start at Center
-                for (let i = 0; i < 3; i++) {
-                    this.pawns.push({ id: `i-${i}`, side: 'INVADER', slot: 'CENTER', color: '#c0392b', icon: '💀' });
-                }
-                this.renderPawns();
+                this.drawPawns();
             }
 
-            renderSlots() {
-                const layer = document.getElementById('slots-layer');
-                const paths = document.getElementById('paths-layer');
-                
+            drawBoard() {
+                const sL = document.getElementById('slots-group');
+                const lL = document.getElementById('links-group');
                 Object.values(this.slots).forEach(s => {
-                    // Links
                     s.links.forEach(lid => {
                         const l = this.slots[lid];
-                        if (lid > s.id) {
-                            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                            line.setAttribute('x1', s.x); line.setAttribute('y1', s.y);
-                            line.setAttribute('x2', l.x); line.setAttribute('y2', l.y);
-                            line.setAttribute('stroke', '#3d4b5a'); line.setAttribute('stroke-width', '4');
-                            paths.appendChild(line);
-                        }
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', s.x); line.setAttribute('y1', s.y);
+                        line.setAttribute('x2', l.x); line.setAttribute('y2', l.y);
+                        line.setAttribute('stroke', '#fff'); line.setAttribute('stroke-width', '2');
+                        lL.appendChild(line);
                     });
 
-                    // Slot
                     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                     g.setAttribute('class', 'slot');
-                    g.onclick = () => this.onSlotClick(s.id);
+                    g.onclick = () => this.clickSlot(s.id);
 
-                    const circ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                    circ.setAttribute('cx', s.x); circ.setAttribute('cy', s.y);
-                    circ.setAttribute('r', s.t === 'HOME' ? '60' : (s.t === 'BASE' ? '40' : '15'));
-                    circ.setAttribute('fill', s.t === 'HOME' ? '#000' : '#1e272e');
-                    circ.setAttribute('stroke', s.c || '#57606f');
-                    circ.setAttribute('stroke-width', '4');
-                    circ.id = `slot-circ-${s.id}`;
-                    g.appendChild(circ);
-
-                    if (s.t === 'BASE') {
-                        const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        txt.setAttribute('x', s.x); txt.setAttribute('y', s.y + 60);
-                        txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('fill', s.c);
-                        txt.setAttribute('font-weight', '900'); txt.setAttribute('font-size', '14');
-                        txt.textContent = s.n.toUpperCase();
-                        g.appendChild(txt);
-                    }
-
-                    layer.appendChild(g);
+                    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    c.setAttribute('cx', s.x); c.setAttribute('cy', s.y);
+                    c.setAttribute('r', s.type === 'HOME' ? 40 : (s.type === 'BIOME' ? 30 : 15));
+                    c.setAttribute('fill', s.type === 'HOME' ? '#000' : '#222');
+                    c.setAttribute('stroke', s.color || '#444');
+                    c.setAttribute('stroke-width', '4');
+                    c.id = `circ-${s.id}`;
+                    g.appendChild(c);
+                    sL.appendChild(g);
                 });
             }
 
-            renderPawns() {
-                const layer = document.getElementById('pawns-layer');
-                layer.innerHTML = '';
-                
-                const grouped = {};
-                this.pawns.forEach(p => {
-                    if (!grouped[p.slot]) grouped[p.slot] = [];
-                    grouped[p.slot].push(p);
-                });
+            drawPawns() {
+                const pL = document.getElementById('pawns-group'); pL.innerHTML = '';
+                const groups = {};
+                this.pawns.forEach(p => { groups[p.slot] = groups[p.slot] || []; groups[p.slot].push(p); });
 
-                Object.entries(grouped).forEach(([sid, ps]) => {
-                    const slot = this.slots[sid];
+                Object.entries(groups).forEach(([sid, ps]) => {
+                    const s = this.slots[sid];
                     ps.forEach((p, i) => {
-                        const offset = (i - (ps.length-1)/2) * 35;
+                        const off = (i - (ps.length-1)/2) * 25;
                         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                        g.setAttribute('class', `pawn ${this.selectedPawn === p ? 'pawn-selected' : ''}`);
-                        g.onclick = (e) => { e.stopPropagation(); this.onPawnClick(p); };
-                        
-                        // Draw a conical "PIÃO" shape
-                        const shape = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        // a nice pawn silouette
-                        shape.setAttribute('d', `M-15,15 L15,15 L10,-5 C10,-15 0,-25 0,-25 C0,-25 -10,-15 -10,-5 Z`);
-                        shape.setAttribute('fill', p.color);
-                        shape.setAttribute('stroke', '#fff');
-                        shape.setAttribute('stroke-width', '2');
-                        shape.setAttribute('transform', `translate(${slot.x + offset}, ${slot.y + 10})`);
-                        g.appendChild(shape);
+                        g.setAttribute('class', `pawn ${this.selected === p ? 'pawn-selected' : ''}`);
+                        g.setAttribute('transform', `translate(${s.x + off}, ${s.y})`);
+                        g.onclick = (e) => { e.stopPropagation(); this.clickPawn(p); };
 
-                        const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        txt.setAttribute('x', slot.x + offset); txt.setAttribute('y', slot.y - 12);
-                        txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('fill', '#fff');
-                        txt.setAttribute('font-size', '18'); txt.textContent = p.icon;
-                        txt.style.pointerEvents = 'none';
-                        g.appendChild(txt);
+                        const base = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        base.setAttribute('d', 'M-12,12 L12,12 L8,-8 C8,-15 0,-25 0,-25 C0,-25 -8,-15 -8,-8 Z');
+                        base.setAttribute('fill', p.color); base.setAttribute('stroke', '#fff');
+                        g.appendChild(base);
 
-                        layer.appendChild(g);
+                        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        icon.setAttribute('y', -15); icon.setAttribute('text-anchor', 'middle');
+                        icon.setAttribute('fill', '#fff'); icon.setAttribute('font-size', '14');
+                        icon.textContent = p.icon; icon.style.pointerEvents = 'none';
+                        g.appendChild(icon);
+                        pL.appendChild(g);
                     });
                 });
             }
@@ -352,124 +222,122 @@
             }
 
             async roll() {
-                if (this.state !== 'ROLL') return;
-                const res = document.getElementById('dice-result');
-                res.classList.add('rolling-anim');
-                
-                // Anim
-                for(let i=0; i<12; i++) {
-                    res.innerText = Math.floor(Math.random()*6)+1;
-                    await new Promise(r => setTimeout(r, 70));
+                if (this.phase !== 'ROLL') return;
+                const d = document.getElementById('dice-face');
+                const faces = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+                for(let i=0; i<8; i++){
+                    d.innerText = faces[Math.floor(Math.random()*6)];
+                    await new Promise(r => setTimeout(r, 60));
                 }
-
                 this.dice = Math.floor(Math.random() * 6) + 1;
-                res.classList.remove('rolling-anim');
-                res.innerText = this.dice;
-                
-                this.state = 'PAWN';
-                document.getElementById('roll-btn').disabled = true;
-                this.hint(`SELECIONE UM PIÃO PARA ANDAR ${this.dice} CASAS`);
+                d.innerText = faces[this.dice - 1];
+                this.phase = 'PIECE';
+                this.updateUI();
+                this.log(`Tirou ${this.dice}! Escolha sua peça.`, this.turn.toLowerCase());
             }
 
-            onPawnClick(p) {
-                if (this.state !== 'PAWN' || p.side !== this.turn) return;
-                this.selectedPawn = p;
-                this.calculateMoves(p.slot, this.dice);
-                
-                if (this.validDests.length === 0) {
-                    this.log("Sem movimentos possíveis para este pião!", 'system');
-                    this.selectedPawn = null;
+            clickPawn(p) {
+                if (this.phase !== 'PIECE' || p.side !== this.turn) return;
+                this.selected = p;
+                this.calcMoves(p.slot, this.dice);
+                if (this.dests.length === 0) {
+                    this.log("Sem jogadas! Passando turno.", 'system');
+                    this.selected = null;
+                    this.endTurn();
                     return;
                 }
-                
-                this.state = 'SLOT';
-                this.renderPawns();
-                this.highlightDests();
-                this.hint("CLIQUE NO DESTINO (BRANCO)");
+                this.phase = 'GO';
+                this.drawPawns();
+                this.drawHighs();
+                this.updateUI();
             }
 
-            calculateMoves(start, steps) {
-                this.validDests = [];
-                let queue = [{ id: start, d: 0 }];
-                let seen = new Set();
-                
-                while(queue.length > 0) {
-                    let { id, d } = queue.shift();
+            calcMoves(curr, steps) {
+                this.dests = [];
+                let q = [{ id: curr, d: 0, path: [curr] }];
+                let found = new Set();
+                while(q.length > 0) {
+                    let { id, d, path } = q.shift();
                     if (d === steps) {
-                        if (id !== start) this.validDests.push(id);
+                        found.add(id);
                         continue;
                     }
                     this.slots[id].links.forEach(next => {
-                        queue.push({ id: next, d: d + 1 });
+                        // Impedir volte imediato no mesmo movimento (opcional)
+                        if (path.length < 2 || next !== path[path.length - 2]) {
+                            q.push({ id: next, d: d+1, path: [...path, next] });
+                        }
                     });
                 }
-                this.validDests = [...new Set(this.validDests)];
+                this.dests = Array.from(found);
             }
 
-            highlightDests() {
-                document.querySelectorAll('.slot-highlight').forEach(el => el.classList.remove('slot-highlight'));
-                this.validDests.forEach(vid => {
-                    document.getElementById(`slot-circ-${vid}`).classList.add('slot-highlight');
+            drawHighs() {
+                document.querySelectorAll('.active-dest').forEach(e => e.classList.remove('active-dest'));
+                this.dests.forEach(id => {
+                    document.getElementById(`circ-${id}`).classList.add('active-dest');
                 });
             }
 
-            onSlotClick(sid) {
-                if (this.state !== 'SLOT' || !this.validDests.includes(sid)) return;
+            clickSlot(id) {
+                if (this.phase !== 'GO' || !this.dests.includes(id)) return;
+                const p = this.selected;
+                p.slot = id;
                 
-                const p = this.selectedPawn;
-                p.slot = sid;
-                
-                // Eat rival
-                const rivals = this.pawns.filter(x => x.slot === sid && x.side !== p.side);
-                if (rivals.length > 0) {
-                    this.log(`${p.side} capturou um rival em ${sid}!`, 'system');
-                    this.pawns = this.pawns.filter(x => x !== rivals[0]);
+                const rival = this.pawns.find(x => x.slot === id && x.side !== p.side);
+                if (rival) {
+                    this.log(`${p.side} capturou ${rival.side}!`, 'system');
+                    this.pawns = this.pawns.filter(x => x !== rival);
                 }
-
-                this.log(`${this.turn} moveu para ${sid}`, this.turn.toLowerCase());
                 this.endTurn();
             }
 
             endTurn() {
-                this.turn = this.turn === 'BIOMES' ? 'INVADER' : 'BIOMES';
-                this.state = 'ROLL';
-                this.selectedPawn = null;
-                this.validDests = [];
-                
-                document.getElementById('roll-btn').disabled = false;
-                document.getElementById('turn-status').innerText = `TURNO: ${this.turn === 'BIOMES' ? 'NATUREZA' : 'INVASORES'}`;
-                document.getElementById('turn-status').style.color = this.turn === 'BIOMES' ? 'var(--forest-side)' : 'var(--invader-side)';
-                
-                document.querySelectorAll('.slot-highlight').forEach(el => el.classList.remove('slot-highlight'));
-                this.renderPawns();
-                this.hint("ROLE O DADO");
-                this.checkWin();
+                this.turn = (this.turn === 'INVADER' ? 'FOREST' : 'INVADER');
+                this.phase = 'ROLL';
+                this.selected = null;
+                this.dests = [];
+                document.querySelectorAll('.active-dest').forEach(e => e.classList.remove('active-dest'));
+                this.drawPawns();
+                this.updateUI();
+                this.check();
             }
 
-            hint(m) { document.getElementById('action-hint').innerText = m; }
+            updateUI() {
+                const btn = document.getElementById('roll-btn');
+                btn.disabled = this.phase !== 'ROLL';
+                const txt = document.getElementById('turn-txt');
+                txt.innerText = this.turn === 'INVADER' ? 'TURNO: INVASORES' : 'TURNO: NATUREZA';
+                txt.style.color = this.turn === 'INVADER' ? 'var(--invader-color)' : 'var(--forest-color)';
+                
+                const hint = document.getElementById('hint');
+                if (this.phase === 'ROLL') hint.innerText = "ROLE O DADO";
+                else if (this.phase === 'PIECE') hint.innerText = "CLIQUE NO SEU PIÃO";
+                else hint.innerText = "CLIQUE NA CASA BRANCA";
+            }
 
             log(m, c) {
-                const log = document.getElementById('game-log');
-                const div = document.createElement('div');
-                div.className = 'log-entry';
-                div.innerText = `> ${m}`;
-                log.prepend(div);
+                const l = document.getElementById('log');
+                const d = document.createElement('div');
+                d.style.marginBottom = '5px';
+                d.style.color = c === 'invader' ? '#ff7675' : (c === 'forest' ? '#55efc4' : '#fab1a0');
+                d.innerText = `> ${m}`;
+                l.prepend(d);
             }
 
-            checkWin() {
-                const b = this.pawns.filter(x => x.side === 'BIOMES').length;
+            check() {
+                const f = this.pawns.filter(x => x.side === 'FOREST').length;
                 const i = this.pawns.filter(x => x.side === 'INVADER').length;
                 if (i === 0) this.win("NATUREZA VENCEU!");
-                else if (b === 0) this.win("INVASORES VENCERAM!");
+                if (f === 0) this.win("INVASORES VENCERAM!");
             }
 
             win(t) {
-                document.getElementById('victory-txt').innerText = t;
-                document.getElementById('victory-overlay').style.display = 'flex';
+                document.getElementById('win-txt').innerText = t;
+                document.getElementById('modal').style.display = 'flex';
             }
         }
-
-        const jogo = new JogoDePiao();
+        window.onload = () => new Core();
     </script>
 </body>
 </html>
