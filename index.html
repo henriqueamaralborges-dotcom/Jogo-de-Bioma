@@ -178,12 +178,25 @@
             to { stroke-dashoffset: 0; }
         }
 
-        .biome-icon { width: 40px; height: 40px; transition: 0.3s; pointer-events: none; }
-        .node:hover .biome-icon { transform: scale(1.2); }
-
-        .biome-glow { filter: blur(15px); opacity: 0.3; pointer-events: none; }
+        /* Pawn Styles */
+        .pawn {
+            width: 50px; height: 50px; cursor: grab; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: auto;
+        }
+        .pawn:active { transform: scale(1.2); cursor: grabbing; }
+        .pawn.forest { stroke: var(--accent-biome); stroke-width: 3; }
+        .pawn.invader { stroke: var(--accent-invader); stroke-width: 3; }
+        .pawn-group { pointer-events: none; }
         
-        .troop-count { pointer-events: none; font-family: 'Orbitron'; font-weight: 900; }
+        #dice-area {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid var(--border-glass);
+        }
+        .dice-box { font-size: 2rem; font-family: 'Orbitron'; color: #ffeb3b; text-shadow: 0 0 10px #fbc02d; margin-top: 10px; }
 
         #modal {
             position: fixed;
@@ -257,7 +270,11 @@
         <div id="battle-log"></div>
 
         <div class="controls">
-            <button class="btn btn-primary" id="btn-next">PRÓXIMA FASE</button>
+            <div id="dice-area">
+                <span class="stat-label">Movimento Disponível</span>
+                <div class="dice-box" id="dice-val">1</div>
+            </div>
+            <button class="btn btn-primary" id="btn-next">PRÓXIMO TURNO</button>
         </div>
     </aside>
 
@@ -296,59 +313,56 @@
         class GameEngine {
             constructor() {
                 this.turn = 'BIOMES'; 
-                this.phase = 'RESTORE'; // RESTORE, AID, RESIST (for biomes) / DAMAGE, ADVANCE, DESTROY (for invaders)
-                this.territories = {
-                    'BASE': { id: 'BASE', owner: 'INVADER', troops: 10, name: 'Núcleo Invasor' }
-                };
-                BIOMES_ORDER.forEach(b => {
-                    this.territories[b.id] = { ...b, owner: 'BIOMES', troops: 5 };
-                });
-
-                this.resources = { BIOMES: 10, INVADER: 10 };
-                this.selected = null;
+                this.pawns = [];
+                this.movesLeft = 0;
+                this.selectedPawn = null;
+                
+                this.initPositions();
                 this.init();
+            }
+
+            initPositions() {
+                // One guardian for each biome
+                BIOMES_ORDER.forEach(b => {
+                    this.pawns.push({ id: `guard-${b.id}`, node: b.id, side: 'BIOMES', color: b.color });
+                });
+                // 3 Invaders at the center
+                for(let i=0; i<3; i++) {
+                    this.pawns.push({ id: `inv-${i}`, node: 'BASE', side: 'INVADER', color: '#ff3e3e' });
+                }
             }
 
             init() {
                 this.renderBoard();
                 this.updateUI();
-                this.log("A natureza está em alerta. Proteja as conexões vitais!", "system");
-                
-                document.getElementById('btn-next').onclick = () => this.nextPhase();
+                this.startTurn();
+                document.getElementById('btn-next').onclick = () => this.nextTurn();
             }
 
-            getHexPoints(cx, cy, r) {
-                let pts = [];
-                for (let i = 0; i < 6; i++) {
-                    const angle = (Math.PI / 3) * i - (Math.PI / 6);
-                    pts.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
-                }
-                return pts.join(' ');
+            startTurn() {
+                // Standard pawn game usually has 1 or a die roll. 
+                // Let's go with 1 move per turn for simplicity, or 3 moves to distribute.
+                this.movesLeft = (this.turn === 'BIOMES') ? 3 : 2; 
+                this.log(`Início da rodada: ${this.turn === 'BIOMES' ? 'Apoio aos Biomas' : 'Invasão'}`, "system");
+                this.updateUI();
             }
 
             renderBoard() {
                 const biomesLayer = document.getElementById('biomes-layer');
                 const bridgesLayer = document.getElementById('bridges-layer');
+                const uiLayer = document.getElementById('ui-layer');
+                
                 biomesLayer.innerHTML = '';
                 bridgesLayer.innerHTML = '';
+                uiLayer.innerHTML = '';
 
-                // 1. Render Base Hex
-                const basePts = this.getHexPoints(CONFIG.CENTER.x, CONFIG.CENTER.y, CONFIG.CENTER_SIZE);
-                const base = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-                base.setAttribute('points', basePts);
-                base.setAttribute('class', 'node node-base');
-                base.onclick = () => this.handleNodeClick('BASE');
-                biomesLayer.appendChild(base);
-
-                // 2. Render Biomes and Bridges
+                // 1. Render Links
                 BIOMES_ORDER.forEach((b, i) => {
-                    const angle = (Math.PI / 3) * i - (Math.PI / 2); // Start top
+                    const angle = (Math.PI / 3) * i - (Math.PI / 2);
                     const bx = CONFIG.CENTER.x + CONFIG.RADIUS * Math.cos(angle);
                     const by = CONFIG.CENTER.y + CONFIG.RADIUS * Math.sin(angle);
-                    
                     b.x = bx; b.y = by;
 
-                    // Radial Bridge (Invasion)
                     const rLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                     rLine.setAttribute('x1', CONFIG.CENTER.x); rLine.setAttribute('y1', CONFIG.CENTER.y);
                     rLine.setAttribute('x2', bx); rLine.setAttribute('y2', by);
@@ -356,7 +370,6 @@
                     rLine.id = `bridge-radial-${b.id}`;
                     bridgesLayer.appendChild(rLine);
 
-                    // Circular Bridge (Interconnection)
                     const nextIndex = (i + 1) % 6;
                     const nextAngle = (Math.PI / 3) * nextIndex - (Math.PI / 2);
                     const nbx = CONFIG.CENTER.x + CONFIG.RADIUS * Math.cos(nextAngle);
@@ -368,17 +381,18 @@
                     cLine.setAttribute('class', 'bridge circular');
                     cLine.id = `bridge-circ-${b.id}-${BIOMES_ORDER[nextIndex].id}`;
                     bridgesLayer.appendChild(cLine);
+                });
 
-                    // Biome Hex
-                    const hexPts = this.getHexPoints(bx, by, CONFIG.HEX_SIZE);
-                    
-                    // Glow
-                    const glow = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                    glow.setAttribute('cx', bx); glow.setAttribute('cy', by); glow.setAttribute('r', CONFIG.HEX_SIZE);
-                    glow.setAttribute('fill', b.color);
-                    glow.setAttribute('class', 'biome-glow');
-                    biomesLayer.appendChild(glow);
+                // 2. Render Nodes
+                const basePts = this.getHexPoints(CONFIG.CENTER.x, CONFIG.CENTER.y, CONFIG.CENTER_SIZE);
+                const base = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                base.setAttribute('points', basePts);
+                base.setAttribute('class', 'node node-base');
+                base.onclick = () => this.handleNodeClick('BASE');
+                biomesLayer.appendChild(base);
 
+                BIOMES_ORDER.forEach(b => {
+                    const hexPts = this.getHexPoints(b.x, b.y, CONFIG.HEX_SIZE);
                     const hex = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
                     hex.setAttribute('points', hexPts);
                     hex.setAttribute('style', `fill: #111; stroke: ${b.color}; stroke-opacity: 0.8;`);
@@ -386,160 +400,152 @@
                     hex.onclick = () => this.handleNodeClick(b.id);
                     biomesLayer.appendChild(hex);
 
-                    // Biome Icon
                     const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-                    img.setAttribute('href', b.img);
-                    img.setAttribute('x', bx - 40); img.setAttribute('y', by - 70);
+                    img.setAttribute('href', b.img); img.setAttribute('x', b.x - 40); img.setAttribute('y', b.y - 70);
                     img.setAttribute('width', '80'); img.setAttribute('height', '80');
-                    img.setAttribute('class', 'biome-icon');
+                    img.style.opacity = '0.3';
                     biomesLayer.appendChild(img);
-
-                    // Troop Label
-                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                    text.setAttribute('x', bx); text.setAttribute('y', by + 10);
-                    text.setAttribute('text-anchor', 'middle');
-                    text.setAttribute('fill', '#fff');
-                    text.setAttribute('class', 'troop-count');
-                    text.setAttribute('font-size', '30');
-                    text.id = `troops-${b.id}`;
-                    text.textContent = this.territories[b.id].troops;
-                    biomesLayer.appendChild(text);
-
-                    // Name Label
-                    const name = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                    name.setAttribute('x', bx); name.setAttribute('y', by + CONFIG.HEX_SIZE + 20);
-                    name.setAttribute('text-anchor', 'middle');
-                    name.setAttribute('fill', '#888');
-                    name.setAttribute('font-size', '14');
-                    name.textContent = b.name;
-                    biomesLayer.appendChild(name);
                 });
 
-                // Center Troop Label
-                const cText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                cText.setAttribute('x', CONFIG.CENTER.x); cText.setAttribute('y', CONFIG.CENTER.y + 10);
-                cText.setAttribute('text-anchor', 'middle');
-                cText.setAttribute('fill', '#fff');
-                cText.setAttribute('class', 'troop-count');
-                cText.setAttribute('font-size', '40');
-                cText.id = `troops-BASE`;
-                cText.textContent = this.territories.BASE.troops;
-                biomesLayer.appendChild(cText);
+                // 3. Render Pawns
+                this.renderPawns();
             }
 
-            handleNodeClick(id) {
-                const territory = this.territories[id];
-                
-                if (this.phase === 'RECRUIT') {
-                    if (territory.owner === this.turn && this.resources[this.turn] > 0) {
-                        territory.troops++;
-                        this.resources[this.turn]--;
-                        this.log(`Recrutou em ${this.territories[id].name}`, this.turn.toLowerCase());
-                    }
-                } else {
-                    if (this.selected) {
-                        if (this.selected === id) {
-                            this.selected = null;
-                        } else {
-                            this.executeAction(this.selected, id);
-                        }
-                    } else {
-                        if (territory.owner === this.turn && territory.troops > 1) {
-                            this.selected = id;
-                        }
-                    }
-                }
+            renderPawns() {
+                const uiLayer = document.getElementById('ui-layer');
+                uiLayer.innerHTML = '';
+
+                // Group pawns by node to avoid stacking overlapping
+                const groups = {};
+                this.pawns.forEach(p => {
+                    if(!groups[p.node]) groups[p.node] = [];
+                    groups[p.node].push(p);
+                });
+
+                Object.entries(groups).forEach(([nodeId, pawns]) => {
+                    const nodePos = nodeId === 'BASE' ? CONFIG.CENTER : BIOMES_ORDER.find(b => b.id === nodeId);
+                    pawns.forEach((p, i) => {
+                        const offset = (i - (pawns.length-1)/2) * 35;
+                        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                        g.setAttribute('class', `pawn-group`);
+                        
+                        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                        circle.setAttribute('cx', nodePos.x + offset); circle.setAttribute('cy', nodePos.y);
+                        circle.setAttribute('r', '20');
+                        circle.setAttribute('fill', p.side === 'INVADER' ? '#000' : '#fff');
+                        circle.setAttribute('stroke', p.side === 'INVADER' ? '#f00' : p.color);
+                        circle.setAttribute('stroke-width', this.selectedPawn === p ? '5' : '2');
+                        circle.setAttribute('class', 'pawn');
+                        circle.onclick = (e) => { e.stopPropagation(); this.handlePawnClick(p); };
+                        
+                        // Icon inside pawn
+                        const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        t.setAttribute('x', nodePos.x + offset); t.setAttribute('y', nodePos.y + 6);
+                        t.setAttribute('text-anchor', 'middle');
+                        t.setAttribute('fill', p.side === 'INVADER' ? '#f00' : '#000');
+                        t.setAttribute('font-size', '16'); t.style.pointerEvents = 'none';
+                        t.textContent = p.side === 'INVADER' ? '👹' : '🍃';
+                        
+                        g.appendChild(circle);
+                        g.appendChild(t);
+                        uiLayer.appendChild(g);
+                    });
+                });
+            }
+
+            handlePawnClick(p) {
+                if (this.turn !== p.side || this.movesLeft <= 0) return;
+                this.selectedPawn = p;
                 this.highlightPaths();
                 this.updateUI();
             }
 
-            highlightPaths() {
-                // Dim all
-                document.querySelectorAll('.bridge').forEach(b => b.classList.remove('highlight'));
-                if (!this.selected) return;
-
-                // Highlight destinations
-                BIOMES_ORDER.concat({ id: 'BASE' }).forEach(node => {
-                    if (this.canReach(this.selected, node.id)) {
-                        const bId = this.isRadial(this.selected, node.id) ? 
-                            `bridge-radial-${(this.selected==='BASE' ? node.id : this.selected)}` :
-                            `bridge-circ-${this.selected}-${node.id}`;
-                        // Simplified bId lookup for highlighting
-                        const radialId = this.isRadial(this.selected, node.id) ? 
-                            `bridge-radial-${this.selected==='BASE'?node.id:this.selected}` : null;
-                        
-                        if (radialId) document.getElementById(radialId)?.classList.add('highlight');
-                        else {
-                            // Circulars are bidirected in SVG ids
-                            document.getElementById(`bridge-circ-${this.selected}-${node.id}`)?.classList.add('highlight');
-                            document.getElementById(`bridge-circ-${node.id}-${this.selected}`)?.classList.add('highlight');
-                        }
-                    }
-                });
+            handleNodeClick(nodeId) {
+                if (this.selectedPawn) {
+                    this.movePawn(this.selectedPawn, nodeId);
+                }
             }
 
-            isRadial(f, t) {
-                return (f === 'BASE' && t !== 'BASE') || (t === 'BASE' && f !== 'BASE');
-            }
-
-            executeAction(fromId, toId) {
-                if (!this.canReach(fromId, toId)) {
-                    this.log("Caminho impossível para este turno!", "system");
-                    this.selected = null;
+            movePawn(pawn, toNodeId) {
+                if (!this.canReach(pawn.node, toNodeId)) {
+                    this.log("Caminho não permitido!", "system");
                     return;
                 }
 
-                const fromNode = this.territories[fromId];
-                const toNode = this.territories[toId];
+                this.log(`${this.turn}: Peça movida para ${toNodeId}`, this.turn.toLowerCase());
+                
+                // Attack logic
+                const enemiesAtDest = this.pawns.filter(p => p.node === toNodeId && p.side !== this.turn);
+                if (enemiesAtDest.length > 0) {
+                    this.resolveConflict(pawn, enemiesAtDest[0]);
+                }
 
-                if (toNode.owner === this.turn) {
-                    // MOVE
-                    const amount = fromNode.troops - 1;
-                    toNode.troops += amount;
-                    fromNode.troops = 1;
-                    this.log(`Reforçou ${toNode.name} com ${amount} tropas`, this.turn.toLowerCase());
-                    this.selected = null;
-                    this.checkEvent();
+                pawn.node = toNodeId;
+                this.movesLeft--;
+                this.selectedPawn = null;
+                
+                if (this.movesLeft <= 0) {
+                    this.log("Ações esgotadas para este turno.", "system");
+                }
+                
+                this.highlightPaths();
+                this.renderPawns();
+                this.updateUI();
+                this.checkVictory();
+            }
+
+            resolveConflict(attacker, defender) {
+                const aRoll = Math.floor(Math.random() * 6) + 1;
+                const dRoll = Math.floor(Math.random() * 6) + 1;
+                this.log(`Confronto: ${aRoll} vs ${dRoll}`, "system");
+                
+                if (aRoll >= dRoll) {
+                    this.log(`${defender.side} removido do tabuleiro!`, "system");
+                    this.pawns = this.pawns.filter(p => p !== defender);
                 } else {
-                    // ATTACK
-                    this.battle(fromId, toId);
-                    this.selected = null;
+                    this.log(`Ataque falhou!`, "system");
                 }
             }
 
-            checkEvent() {
-                if (Math.random() > 0.7) {
-                    const ev = EVENTS[Math.floor(Math.random() * EVENTS.length)];
-                    const t = this.territories[this.turn === 'BIOMES' ? 'AMAZONIA' : 'BASE']; // Simplified
-                    t.troops = Math.max(1, t.troops + ev.v);
-                    this.showModal(`EVENTO: ${ev.n}`, ev.t, ev.img);
-                }
+            nextTurn() {
+                this.turn = this.turn === 'BIOMES' ? 'INVADER' : 'BIOMES';
+                this.selectedPawn = null;
+                this.startTurn();
+                this.highlightPaths();
+                this.renderPawns();
+                this.updateUI();
+            }
+
+            updateUI() {
+                document.getElementById('turn-display').innerText = this.turn === 'BIOMES' ? 'TURNO DO GUARDIÃO' : 'TURNO DO INVASOR';
+                document.getElementById('turn-display').className = this.turn === 'BIOMES' ? 'turn-forest' : 'turn-invader';
+                document.getElementById('dice-val').innerText = this.movesLeft;
+                
+                const btn = document.getElementById('btn-next');
+                btn.innerText = `PASSAR TURNO`;
+                btn.style.opacity = this.movesLeft <= 0 ? '1' : '0.5';
+
+                // Update domain bar (simplified for pawn game)
+                let bCount = this.pawns.filter(p => p.side === 'BIOMES').length;
+                let iCount = this.pawns.filter(p => p.side === 'INVADER').length;
+                const total = bCount + iCount;
+                document.getElementById('bar-biomes').style.width = (bCount / total * 100) + '%';
+                document.getElementById('bar-invader').style.width = (iCount / total * 100) + '%';
             }
 
             canReach(from, to) {
-                // Rule: Invaders only Radial, UNLESS they own a biome.
-                // Rule: Biomes only Circular.
-                const isInvader = this.turn === 'INVADER';
-                
-                // Radial Check
+                if (from === to) return false;
                 const isRadial = (from === 'BASE' && to !== 'BASE') || (to === 'BASE' && from !== 'BASE');
-                // Circular Check
                 const isCircular = from !== 'BASE' && to !== 'BASE' && this.areNeighbors(from, to);
 
-                if (isInvader) {
+                if (this.turn === 'INVADER') {
                     if (isRadial) return true;
-                    if (isCircular) {
-                        // Can use circular if attacker owns the starting biome
-                        return this.territories[from].owner === 'INVADER';
-                    }
+                    // invader needs a bridgehead to use circular
+                    const attackerOwnsFrom = true; // Simplified for pawn game: they can move if they are there
+                    return isCircular; 
                 } else {
-                    // Biomes
-                    if (isCircular) return true;
-                    // Can biomes attack center? Prompt says "proteger ponte". 
-                    // Let's allow if they have troops.
-                    if (isRadial) return true; 
+                    return isCircular || isRadial;
                 }
-                return false;
             }
 
             areNeighbors(id1, id2) {
@@ -550,111 +556,36 @@
                 return diff === 1 || diff === 5;
             }
 
-            battle(aid, did) {
-                const att = this.territories[aid];
-                const def = this.territories[did];
-
-                const aRoll = Math.floor(Math.random() * 6) + 1;
-                const dRoll = Math.floor(Math.random() * 6) + 1;
-
-                this.log(`Batalha: ${aRoll} vs ${dRoll}`, "system");
-
-                if (aRoll > dRoll) {
-                    def.troops--;
-                    if (def.troops <= 0) {
-                        def.owner = this.turn;
-                        def.troops = att.troops - 1;
-                        att.troops = 1;
-                        this.log(`${def.name} FOI DOMINADO!`, this.turn.toLowerCase());
-                        this.checkVictory();
-                    }
-                } else {
-                    att.troops--;
-                }
+            checkVictory() {
+                const invaders = this.pawns.filter(p => p.side === 'INVADER');
+                const guardians = this.pawns.filter(p => p.side === 'BIOMES');
+                
+                if (invaders.length === 0) this.showModal("VITÓRIA", "Os biomas repeliram a ameaça!");
+                if (guardians.length === 0) this.showModal("DERROTA", "A floresta sucumbiu.");
             }
 
-            nextPhase() {
-                const phases = this.turn === 'BIOMES' ? 
-                    ['RESTORE', 'AID', 'RESIST'] : 
-                    ['DAMAGE', 'ADVANCE', 'DESTROY'];
-                
-                let idx = phases.indexOf(this.phase);
-                
-                if (idx === 2) {
-                    this.turn = this.turn === 'BIOMES' ? 'INVADER' : 'BIOMES';
-                    this.phase = this.turn === 'BIOMES' ? 'RESTORE' : 'DAMAGE';
-                    this.calculateResources();
-                } else {
-                    this.phase = phases[idx + 1];
+            getHexPoints(cx, cy, r) {
+                let pts = [];
+                for (let i = 0; i < 6; i++) {
+                    const angle = (Math.PI / 3) * i - (Math.PI / 6);
+                    pts.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
                 }
-                
-                this.selected = null;
-                this.updateUI();
+                return pts.join(' ');
             }
 
-            calculateResources() {
-                let count = 0;
-                Object.values(this.territories).forEach(t => {
-                    if (t.owner === this.turn) count++;
-                });
-                const bonus = Math.max(3, Math.floor(count / 2));
-                this.resources[this.turn] += bonus;
-                const msg = this.turn === 'BIOMES' ? 
-                    `A força da natureza cresce: +${bonus} bioenergia` : 
-                    `A destruição se espalha: +${bonus} poder de ataque`;
-                this.log(msg, this.turn.toLowerCase());
-            }
-
-            updateUI() {
-                const phasesMap = {
-                    'RESTORE': 'RESTAURAÇÃO',
-                    'AID': 'AUXÍLIO VIZINHO',
-                    'RESIST': 'RESISTÊNCIA',
-                    'DAMAGE': 'CONCENTRAÇÃO',
-                    'ADVANCE': 'AVANÇO',
-                    'DESTROY': 'DESTRUIÇÃO'
-                };
-                
-                document.getElementById('phase-display').innerText = phasesMap[this.phase];
-                const turnEl = document.getElementById('turn-display');
-                if (this.turn === 'BIOMES') {
-                    turnEl.innerText = 'PROTEÇÃO DA FLORESTA';
-                    turnEl.className = 'turn-forest';
-                } else {
-                    turnEl.innerText = 'ATAQUE DOS INVASORES';
-                    turnEl.className = 'turn-invader';
-                }
-
-                document.getElementById('res-biomes').innerText = this.resources.BIOMES;
-                document.getElementById('res-invader').innerText = this.resources.INVADER;
-
-                // Update Troop Counts and Colors
-                Object.entries(this.territories).forEach(([id, data]) => {
-                    const text = document.getElementById(`troops-${id}`);
-                    if (text) text.textContent = data.troops;
-
-                    const node = document.querySelector(`.node[onclick*="${id}"]`);
-                    if (node) {
-                        if (id === 'BASE') {
-                            node.style.stroke = data.owner === 'INVADER' ? '#ff3e3e' : '#00f2ff';
-                        } else {
-                            node.style.fill = data.owner === 'INVADER' ? 'rgba(255, 62, 62, 0.4)' : '#111';
-                            // Bold selection
-                            node.style.strokeWidth = (this.selected === id) ? '8' : '3';
-                            if (this.selected === id) node.style.stroke = '#fff';
-                            else node.style.stroke = data.color;
-                        }
+            highlightPaths() {
+                document.querySelectorAll('.bridge').forEach(b => b.classList.remove('highlight'));
+                if (!this.selectedPawn) return;
+                BIOMES_ORDER.concat({id:'BASE'}).forEach(t => {
+                    if(this.canReach(this.selectedPawn.node, t.id)) {
+                        // find matching line
+                        const n1 = this.selectedPawn.node, n2 = t.id;
+                        const selector = n1 === 'BASE' || n2 === 'BASE' ? 
+                            `#bridge-radial-${n1==='BASE'?n2:n1}` : 
+                            `#bridge-circ-${n1}-${n2}, #bridge-circ-${n2}-${n1}`;
+                        document.querySelectorAll(selector).forEach(l => l.classList.add('highlight'));
                     }
                 });
-
-                // Update domain bar
-                let bCount = 0, iCount = 0;
-                Object.values(this.territories).forEach(t => {
-                    if (t.owner === 'BIOMES') bCount++; else iCount++;
-                });
-                const total = bCount + iCount;
-                document.getElementById('bar-biomes').style.width = (bCount / total * 100) + '%';
-                document.getElementById('bar-invader').style.width = (iCount / total * 100) + '%';
             }
 
             log(msg, type) {
