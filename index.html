@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biomas em Guerra: Mapa Pixel Art</title>
+    <title>Biomas em Guerra: A Trilha do Mapa</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Outfit:wght@400;900&display=swap" rel="stylesheet">
@@ -11,8 +11,8 @@
         :root {
             --guardian: #2ecc71;
             --invader: #e74c3c;
-            --path-active: #fff;
             --highlight: #f1c40f;
+            --debuff: #ff0000;
         }
 
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -38,12 +38,12 @@
             border-bottom: 2px solid #333;
             z-index: 100;
         }
-        .logo { font-family: 'Fredoka One'; font-size: 2.22rem; }
+        .logo { font-family: 'Fredoka One'; font-size: 2rem; }
 
         #board-viewer {
             grid-area: board;
             position: relative;
-            background-color: #579bc1; /* Cor da água do mapa */
+            background-color: #579bc1;
             background-image: url('mapa.png');
             background-size: contain;
             background-repeat: no-repeat;
@@ -56,7 +56,7 @@
 
         #sidebar {
             grid-area: sidebar;
-            background: #151525;
+            background: #121420;
             border-left: 2px solid #000;
             padding: 30px;
             display: flex;
@@ -70,7 +70,7 @@
         
         .btn { 
             width: 100%; padding: 20px; border-radius: 15px; border: none; 
-            font-family: 'Fredoka One'; font-size: 1.4rem; cursor: pointer; transition: 0.2s;
+            font-family: 'Fredoka One'; font-size: 1.3rem; cursor: pointer; transition: 0.2s;
             background: #fff; color: #000; box-shadow: 0 6px 0 #999;
         }
         .btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 9px 0 #999; }
@@ -79,14 +79,16 @@
 
         .hint { background: rgba(0,0,0,0.8); padding: 15px; border-radius: 10px; border: 2px solid var(--highlight); color: var(--highlight); font-weight: 900; text-align: center; text-transform: uppercase; font-size: 0.9rem; }
 
-        #log { flex: 1; background: #000; border-radius: 12px; padding: 15px; overflow-y: auto; font-size: 0.85rem; color: #888; border: 1px solid #222; }
+        #log { flex: 1; background: #000; border-radius: 12px; padding: 15px; overflow-y: auto; font-size: 0.82rem; color: #888; border: 1px solid #222; }
 
-        /* Board Overlay (Invisível para registrar cliques no mapa) */
-        .node-tile { fill: rgba(255,255,255,0.01); transition: 0.2s; cursor: pointer; }
+        /* Board Elements */
+        .node-tile { fill: rgba(255,255,255,0.01); transition: 0.2s; cursor: pointer; stroke: none; }
         .node-tile:hover { fill: rgba(255,255,255,0.1); }
         
+        .debuff-marker { stroke: rgba(255,0,0,0.4) !important; stroke-width: 5 !important; }
+
         .target-active { 
-            stroke: #fff !important; stroke-width: 10 !important; 
+            stroke: #fff !important; stroke-width: 12 !important; 
             stroke-dasharray: 10 5; animation: dashAnim 3s linear infinite; 
             fill: rgba(255,255,255,0.4) !important; r: 40 !important;
         }
@@ -95,12 +97,13 @@
         /* Pawns */
         .pawn-g { transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28); pointer-events: all; }
         .pawn-visual { filter: drop-shadow(0 5px 15px rgba(0,0,0,0.8)); cursor: pointer; }
-        .pawn-jumping { animation: pawnHop 0.6s infinite alternate ease-in-out; }
+        .pawn-jumping { animation: pawnHop 0.7s infinite alternate ease-in-out; }
         @keyframes pawnHop { from { transform: translateY(0); } to { transform: translateY(-20px); } }
         .pawn-selected { filter: drop-shadow(0 0 25px #fff); transform: translateY(-30px) scale(1.4); z-index: 1000; }
 
         #win-modal { position: fixed; inset: 0; background: rgba(0,0,0,1); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; }
-        #image-helper { position: absolute; top: 0; left: 0; width: 100%; padding: 5px; background: rgba(255,0,0,0.8); color: #fff; font-size: 11px; text-align: center; display: none; }
+        #debuff-alert { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); background: #ff0000; color: #fff; padding: 10px 20px; border-radius: 10px; font-weight: 900; display: none; animation: pop 0.5s; z-index: 2000; }
+        @keyframes pop { 0% { transform: translate(-50%, -20px) scale(0); } 100% { transform: translate(-50%, 0) scale(1); } }
     </style>
 </head>
 <body>
@@ -110,9 +113,8 @@
     </header>
 
     <div id="board-viewer">
-        <div id="image-helper">⚠️ MAPA NÃO ENCONTRADO! Salve a imagem do chat como 'mapa.png' na pasta do jogo.</div>
+        <div id="debuff-alert">⚠️ CAIU NO DEBUFF! VOLTOU 2 CASAS!</div>
         <svg id="game-svg" viewBox="0 0 1000 1000">
-            <!-- Camadas -->
             <g id="lay-nodes"></g> 
             <g id="lay-pawns"></g>
         </svg>
@@ -135,14 +137,13 @@
     </div>
 
     <script>
-        // CALIBRAÇÃO MANUAL PARA CASAR COM O DESENHO DO MAPA PIXEL ART
-        const BASES = [
-            { id: 'CAA', n: 'Caatinga', c: '#ff7733', x: 250, y: 150 },
-            { id: 'PAN', n: 'Pantanal', c: '#ffbb33', x: 745, y: 135 },
-            { id: 'CER', n: 'Cerrado', c: '#f1c40f', x: 890, y: 520 },
-            { id: 'AMZ', n: 'Amazônia', c: '#2ecc71', x: 735, y: 885 },
-            { id: 'MAT', n: 'Mata Atlântica', c: '#3498db', x: 260, y: 885 },
-            { id: 'COS', n: 'Costão Rochoso', x: 130, y: 520, c: '#95a5a6' }
+        const BIOMAS = [
+            { id: 'CAA', n: 'Caatinga', x: 250, y: 150 },
+            { id: 'PAN', n: 'Pantanal', x: 745, y: 135 },
+            { id: 'CER', n: 'Cerrado', x: 890, y: 520 },
+            { id: 'AMZ', n: 'Amazônia', x: 745, y: 885 },
+            { id: 'MAT', n: 'Mata Atlântica', x: 260, y: 885 },
+            { id: 'COS', n: 'Costão Rochoso', x: 130, y: 520 }
         ];
 
         class JogoEngine {
@@ -155,25 +156,16 @@
                 this.selected = null;
                 this.dests = [];
 
-                this.checkImage();
                 this.setupGraph();
                 this.setupPawns();
                 this.bind();
                 this.ui();
             }
 
-            checkImage() {
-                const img = new Image();
-                img.onerror = () => document.getElementById('image-helper').style.display = 'block';
-                img.src = 'mapa.png';
-            }
-
             setupGraph() {
-                // START (Centro do mapa pixelado)
-                this.add('START', 485, 480, 'HOME');
+                this.add('START', 485, 480, 'START');
 
-                // RADIAIS (Seguindo os caminhos da imagem)
-                BASES.forEach(b => {
+                BIOMAS.forEach(b => {
                     let prev = 'START';
                     const steps = 4;
                     for (let i = 1; i <= steps; i++) {
@@ -185,48 +177,46 @@
                         this.link(prev, sid);
                         prev = sid;
                     }
-                    this.add(b.id, b.x, b.y, 'BASE', b.n, b.c);
+                    this.add(b.id, b.x, b.y, 'BIOME');
                     this.link(prev, b.id);
                 });
 
-                // CIRCULARES (Anel externo do mapa pixelado)
-                BASES.forEach((b, i) => {
-                    const next = BASES[(i + 1) % 6];
-                    let prev = b.id;
-                    const steps = 7; // Imagem tem ~7 caixas entre biomas
+                BIOMAS.forEach((b, i) => {
+                    const next = BIOMAS[(i + 1) % 6];
+                    let prevNode = b.id;
+                    const steps = 7; 
                     for (let j = 1; j <= steps; j++) {
                         const sid = `c-${b.id}-${next.id}-${j}`;
                         const t = j / (steps + 1);
-                        
-                        // Arco circular manual para bater com a imagem
                         const midA = Math.atan2(b.y - 480, b.x - 485);
                         const endA = Math.atan2(next.y - 480, next.x - 485);
                         let diff = endA - midA;
                         if (diff < 0) diff += Math.PI * 2;
                         const a = midA + diff * t;
-                        const d = 370; // Raio médio da imagem
+                        const d = 370;
                         const x = 485 + d * Math.cos(a);
                         const y = 480 + d * Math.sin(a);
 
-                        this.add(sid, x, y, 'STEP');
-                        this.link(prev, sid);
-                        prev = sid;
+                        // CASINHAS VERMELHAS (DEBUFFS) - Na imagem são as casas intermediárias
+                        const isDebuff = (j === 4); // Casinha do meio no anel circular
+                        this.add(sid, x, y, isDebuff ? 'DEBUFF' : 'STEP');
+                        this.link(prevNode, sid);
+                        prevNode = sid;
                     }
-                    this.link(prev, next.id);
+                    this.link(prevNode, next.id);
                 });
                 this.render();
             }
 
-            add(id, x, y, t, n = '', c = null) { this.nodes[id] = { id, x, y, t, n, c, links: [] }; }
+            add(id, x, y, type) { this.nodes[id] = { id, x, y, type, links: [] }; }
             link(a, b) { this.nodes[a].links.push(b); this.nodes[b].links.push(a); }
 
             setupPawns() {
+                // Todos os jogadores começam no START conforme solicitado
                 for (let i = 1; i <= 3; i++) {
-                    this.pawns.push({ id: `i${i}`, side: 'INVADER', node: 'START', c: '#ff3333', i: '👹' });
+                    this.pawns.push({ id: `i${i}`, side: 'INVADER', node: 'START', color: '#ff3333', i: '👹', prev: 'START' });
+                    this.pawns.push({ id: `g${i}`, side: 'GUARD', node: 'START', color: '#27ae60', i: '🛡️', prev: 'START' });
                 }
-                BASES.forEach(b => {
-                    this.pawns.push({ id: `g-${b.id}`, side: 'GUARD', node: b.id, c: b.c, i: '🛡️' });
-                });
                 this.renderPawns();
             }
 
@@ -238,8 +228,9 @@
                     g.addEventListener('click', () => this.nodeClick(n.id));
                     const circ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                     circ.setAttribute('cx', n.x); circ.setAttribute('cy', n.y);
-                    circ.setAttribute('r', n.t === 'HOME' ? 65 : (n.t === 'BASE' ? 45 : 25));
+                    circ.setAttribute('r', n.type === 'START' ? 65 : (n.type === 'BIOME' ? 45 : 25));
                     circ.setAttribute('class', 'node-tile');
+                    if (n.type === 'DEBUFF') circ.classList.add('debuff-marker');
                     circ.setAttribute('id', `c-${n.id}`);
                     g.appendChild(circ);
                     layer.appendChild(g);
@@ -259,24 +250,22 @@
                         const mG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                         mG.setAttribute('transform', `translate(${n.x + ox}, ${n.y + oy})`);
                         mG.setAttribute('class', 'pawn-g');
-                        const bG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                        bG.classList.add('pawn-visual');
-                        if (this.selected === p) bG.classList.add('pawn-selected');
-                        if (this.state === 'PICK' && p.side === this.turn) bG.classList.add('pawn-jumping');
+                        const pth = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        pth.setAttribute('d', 'M-22,25 L22,25 L18,-15 C15,-30 0,-45 0,-45 C0,-45 -15,-30 -18,-15 Z');
+                        pth.setAttribute('fill', p.color); pth.setAttribute('stroke', '#fff'); pth.setAttribute('stroke-width', '3');
+                        pth.setAttribute('class', 'pawn-visual');
+                        if (this.selected === p) pth.classList.add('pawn-selected');
+                        if (this.state === 'PICK' && p.side === this.turn) pth.classList.add('pawn-jumping');
                         if (this.state === 'MOVE') mG.style.pointerEvents = 'none';
                         else {
                             mG.style.pointerEvents = 'all';
                             mG.addEventListener('click', (e) => { e.stopPropagation(); this.pawnClick(p); });
                         }
-                        const pth = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        pth.setAttribute('d', 'M-22,25 L22,25 L18,-15 C15,-30 0,-45 0,-45 C0,-45 -15,-30 -18,-15 Z');
-                        pth.setAttribute('fill', p.c); pth.setAttribute('stroke', '#fff'); pth.setAttribute('stroke-width', '3');
-                        bG.appendChild(pth);
                         const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                         txt.setAttribute('y', -22); txt.setAttribute('text-anchor', 'middle');
                         txt.setAttribute('fill', '#fff'); txt.setAttribute('font-size', '22'); txt.setAttribute('font-weight', '900');
-                        txt.textContent = p.i; bG.appendChild(txt);
-                        mG.appendChild(bG);
+                        txt.textContent = p.i;
+                        mG.appendChild(pth); mG.appendChild(txt);
                         layer.appendChild(mG);
                     });
                 });
@@ -326,9 +315,25 @@
             nodeClick(id) {
                 if (this.state !== 'MOVE' || !this.dests.includes(id)) return;
                 const p = this.selected;
+                const oldPos = p.node;
                 p.node = id;
+
+                // LOGICA DE DEBUFF (AS CASINHAS VERMELHAS)
+                if (this.nodes[id].type === 'DEBUFF') {
+                    document.getElementById('debuff-alert').style.display = 'block';
+                    setTimeout(() => {
+                        document.getElementById('debuff-alert').style.display = 'none';
+                        p.node = oldPos; // Volta para onde estava (Debuff de mandar pro inicio/voltar)
+                        this.renderPawns();
+                    }, 1500);
+                    this.log("Caiu na casinha vermelha! Voltou para o início da trilha.", 'system');
+                }
+
                 const riv = this.pawns.find(x => x.node === id && x.side !== p.side);
-                if (riv) { this.pawns = this.pawns.filter(x => x !== riv); }
+                if (riv && id !== 'START') {
+                    this.pawns = this.pawns.filter(x => x !== riv);
+                    this.log("Bateu no oponente e o removeu!", 'system');
+                }
                 this.turnEnd();
             }
 
@@ -342,7 +347,7 @@
                 document.getElementById('btn-roll').disabled = (this.state !== 'ROLL');
                 const t = document.getElementById('stat-turn');
                 t.innerText = this.turn === 'INVADER' ? 'TURNO: INVASORES' : 'TURNO: GUARDIÕES';
-                t.style.color = this.turn === 'INVADER' ? 'var(--invader)' : 'var(--guardian)';
+                t.style.color = this.turn === 'INVADER' ? 'var(--invader)' : 'var(--debuff)';
                 const h = document.getElementById('game-hint');
                 if (this.state === 'ROLL') h.innerText = "ROLE O DADO";
                 else if (this.state === 'PICK') h.innerText = "CLIQUE NO PIÃO QUE ESTÁ PULANDO";
@@ -355,7 +360,16 @@
                 this.renderPawns();
             }
 
+            log(m, c) {
+                const l = document.getElementById('log');
+                const d = document.createElement('div');
+                d.style.padding = '5px 0'; d.style.color = c === 'invader' ? '#ff7675' : '#78e08f';
+                d.innerText = `> ${m}`; l.prepend(d);
+            }
+
             checkVictory() {
+                // Ganha quem chegar no bioma destino ou eliminar todos?
+                // Vamos manter eliminacao por enquanto.
                 const g = this.pawns.filter(x => x.side === 'GUARD').length;
                 const i = this.pawns.filter(x => x.side === 'INVADER').length;
                 if (i === 0) this.win("GUARDIÕES VENCERAM!");
