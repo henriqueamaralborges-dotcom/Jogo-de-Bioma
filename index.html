@@ -784,14 +784,8 @@
             }
 
             checkWin() {
-                const guardsLeft = this.pawns.filter(x => x.side === 'GUARD').length;
-                const invadersLeft = this.pawns.filter(x => x.side === 'INVADER').length;
-                
-                if (invadersLeft === 0) return this.showWin("GUARDIANS WON BY ELIMINATION!");
-                if (guardsLeft === 0) return this.showWin("INVADERS WON BY ELIMINATION!");
-
-                if (this.progress.INVADER.size === 6) return this.showWin("INVADERS CONQUERED ALL BIOMES!");
-                if (this.progress.GUARD.size === 6) return this.showWin("GUARDIANS CONQUERED ALL BIOMES!");
+                // Instant wins disabled as per user request: "O time só vai ganhar quando o tempo acabar"
+                // Game now always runs until the 40-minute timer hits zero.
             }
 
             showWin(txt) {
