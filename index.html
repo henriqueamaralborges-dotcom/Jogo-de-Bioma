@@ -171,8 +171,25 @@
         .pawn-jumping { animation: pixelPop 0.4s infinite steps(2); }
         @keyframes pixelPop { 0% { transform: translateY(0); } 100% { transform: translateY(-10px); } }
         .pawn-selected { filter: drop-shadow(0 0 10px #fff); transform: scale(1.2); }
+        .pawn-shielded { filter: drop-shadow(0 0 15px #00ffff) !important; stroke: #00ffff !important; stroke-width: 8 !important; }
 
-        #win-modal { position: fixed; inset: 0; background: #000; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; border: 20px double var(--highlight); }
+        .buff-tile {
+            fill: #00ff66 !important;
+            fill-opacity: 0.7 !important;
+            stroke: #ffffff !important;
+            stroke-width: 6 !important;
+        }
+
+        /* Particles */
+        .dust-particle { position: absolute; width: 8px; height: 8px; background: #888; pointer-events: none; z-index: 1000; }
+        .confetti-particle { position: absolute; width: 10px; height: 10px; pointer-events: none; z-index: 10001; }
+
+        @keyframes dustAnim { 
+            0% { transform: scale(1) translate(0,0); opacity: 1; }
+            100% { transform: scale(0) translate(var(--dx), var(--dy)); opacity: 0; }
+        }
+
+        #win-modal { position: fixed; inset: 0; background: #000; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; border: 20px double var(--highlight); overflow: hidden; }
         
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -299,20 +316,18 @@
                     const pts = RADS[b.id]; let prev = 'START';
                     pts.forEach((p, i) => {
                         const id = `r-${b.id}-${i}`;
-                        // Improved distribution: alternating pattern or random based on weighted diff
-                        let isDebuff = false;
+                        let type = 'STEP';
                         if (b.id === 'AMZ') {
-                             // Amazon: high frequency, guaranteed every 2nd or 3rd tile
-                             isDebuff = (i % 2 === 0) || (Math.random() < 0.4);
+                             type = (i % 2 === 0 || Math.random() < 0.4) ? 'DEBUFF' : 'STEP';
                         } else if (b.id === 'MAT') {
-                             // Atlantic Forest: very low frequency
-                             isDebuff = (i > 0) && (Math.random() < 0.05);
+                             type = (i > 0 && Math.random() < 0.05) ? 'DEBUFF' : 'STEP';
                         } else {
-                             // Normal biomes: periodic or scattered
-                             isDebuff = (i % 5 === 2) || (Math.random() < 0.1);
+                             type = (i % 5 === 2 || Math.random() < 0.1) ? 'DEBUFF' : 'STEP';
                         }
+                        
+                        // Small chance for BUFF tiles on every path
+                        if (type === 'STEP' && Math.random() < 0.1) type = 'BUFF';
 
-                        const type = isDebuff ? 'DEBUFF' : 'STEP';
                         this.addN(id, p[0], p[1], type);
                         this.linkN(prev, id); prev = id;
                     });
@@ -328,11 +343,10 @@
 
                     pts.forEach((p, j) => {
                         const id = `c-${key}-${j}`;
-                        // Ring debuffs: Clusters near dangerous biomes
-                        let isDebuff = Math.random() < ringDiff;
-                        if (toId === 'AMZ' && j > 4) isDebuff = true; // Danger zone approaching Amazon
-                        
-                        const type = isDebuff ? 'DEBUFF' : 'STEP';
+                        let type = (Math.random() < ringDiff) ? 'DEBUFF' : 'STEP';
+                        if (toId === 'AMZ' && j > 4) type = 'DEBUFF';
+                        if (type === 'STEP' && Math.random() < 0.15) type = 'BUFF';
+
                         this.addN(id, p[0], p[1], type);
                         this.linkN(prev, id); prev = id;
                     });
@@ -346,8 +360,8 @@
 
             buildPawns() {
                 for (let i = 1; i <= 3; i++) {
-                    this.pawns.push({ id: `inv${i}`, side: 'INVADER', node: 'START', color: '#ff3300', icon: '💀' });
-                    this.pawns.push({ id: `grd${i}`, side: 'GUARD', node: 'START', color: '#00ff66', icon: '🛡️' });
+                    this.pawns.push({ id: `inv${i}`, side: 'INVADER', node: 'START', color: '#ff3300', icon: '💀', shield: false, boost: 0 });
+                    this.pawns.push({ id: `grd${i}`, side: 'GUARD', node: 'START', color: '#00ff66', icon: '🛡️', shield: false, boost: 0 });
                 }
                 this.drawPawns();
             }
@@ -360,18 +374,21 @@
                     g.style.cursor = 'pointer';
                     g.addEventListener('click', () => this.onNodeClick(n.id));
                     
-                    if (n.type === 'STEP' || n.type === 'DEBUFF') {
+                    if (n.type === 'STEP' || n.type === 'DEBUFF' || n.type === 'BUFF') {
                         const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
                         const s = 34; 
                         r.setAttribute('x', n.x - s / 2); r.setAttribute('y', n.y - s / 2);
                         r.setAttribute('width', s); r.setAttribute('height', s);
                         r.setAttribute('id', `tile-${n.id}`);
-                        if (n.type === 'DEBUFF') {
-                            r.setAttribute('class', 'node-tile debuff-tile');
-                            r.setAttribute('fill', '#ff0000'); // Atributo direto para garantir cor
-                        } else {
-                            r.setAttribute('class', 'node-tile');
-                        }
+                        
+                        let cls = 'node-tile';
+                        if (n.type === 'DEBUFF') cls += ' debuff-tile';
+                        if (n.type === 'BUFF') cls += ' buff-tile';
+                        r.setAttribute('class', cls);
+                        
+                        if (n.type === 'DEBUFF') r.setAttribute('fill', '#ff0000');
+                        if (n.type === 'BUFF') r.setAttribute('fill', '#00ff66');
+
                         g.appendChild(r);
                     } else {
                         const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -406,6 +423,7 @@
                         body.setAttribute('stroke-width', '4'); body.setAttribute('class', 'pawn-visual');
                         if (this.selected === p) body.classList.add('pawn-selected');
                         if (this.state === 'PICK' && p.side === this.turn) body.classList.add('pawn-jumping');
+                        if (p.shield) body.classList.add('pawn-shielded');
 
                         mg.addEventListener('click', (e) => { e.stopPropagation(); this.onPawnClick(p); });
                         const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -426,13 +444,25 @@
                     await new Promise(r => setTimeout(r, 60));
                 }
                 this.dice = Math.floor(Math.random() * 6) + 1;
+                
+                // Mata Atlântica Power: +1 on move
+                const activePawns = this.pawns.filter(p => p.side === this.turn);
+                if (activePawns.some(p => p.node.includes('MAT'))) {
+                    this.dice++;
+                    this.addLog("Atlantic Forest Power: +1 movement!");
+                }
+
                 dv.innerText = this.dice; this.state = 'PICK'; this.refresh();
             }
 
             onPawnClick(p) {
                 if (this.state !== 'PICK' || p.side !== this.turn) return;
-                this.selected = p; this.findDests(p.node, this.dice);
-                if (this.dests.length === 0) { this.addLog("Sem caminhos disponíveis!"); this.endTurn(); return; }
+                this.selected = p; 
+                
+                // Amazon Power: Speed boost (+2 tiles) after surviving debuff
+                let boost = p.boost || 0;
+                this.findDests(p.node, this.dice + boost);
+                if (this.dests.length === 0) { this.addLog("No possible paths!"); this.endTurn(); return; }
                 this.state = 'MOVE'; this.refresh();
             }
 
@@ -455,25 +485,96 @@
                 if (this.state !== 'MOVE' || !this.dests.includes(id)) return;
                 const p = this.selected; const old = p.node;
                 this.pendingMove = { pawn: p, from: old, to: id };
+                
+                this.spawnDust(this.nodes[old].x, this.nodes[old].y);
+
                 if (this.nodes[id].type === 'DEBUFF') {
-                    const img = DEBUFF_IMAGES[Math.floor(Math.random() * DEBUFF_IMAGES.length)];
-                    document.getElementById('debuff-card-img').src = img;
-                    document.getElementById('debuff-overlay').style.display = 'flex';
-                } else { this.completeMove(); }
+                    if (p.shield) {
+                        this.addLog("Shield blocked the danger!");
+                        p.shield = false;
+                        this.completeMove();
+                    } else {
+                        const img = DEBUFF_IMAGES[Math.floor(Math.random() * DEBUFF_IMAGES.length)];
+                        document.getElementById('debuff-card-img').src = img;
+                        document.getElementById('debuff-overlay').style.display = 'flex';
+                    }
+                } else if (this.nodes[id].type === 'BUFF') {
+                     this.triggerBuff();
+                } else { 
+                    this.completeMove(); 
+                }
+            }
+
+            triggerBuff() {
+                const buffs = ['EXTRA','SHIELD','WARP'];
+                const b = buffs[Math.floor(Math.random()*buffs.length)];
+                if (b === 'EXTRA') {
+                    this.addLog("BUFF: Extra Move!");
+                    this.selected.extraMove = true;
+                } else if (b === 'SHIELD') {
+                    this.addLog("BUFF: Shield Gained!");
+                    this.selected.shield = true;
+                } else {
+                    this.addLog("BUFF: Warp Crystal!");
+                    this.isWarp = true;
+                }
+                this.completeMove();
             }
 
             completeMove(failed = false) {
                 const m = this.pendingMove;
-                if (!failed) { m.pawn.node = m.to; this.checkCaptures(m.to, m.pawn); }
-                else { this.addLog("Environmental hazard! Returned to previous tile."); }
-                this.pendingMove = null; this.endTurn();
+                const p = m.pawn;
+                if (!failed) { 
+                    p.node = m.to; 
+                    this.checkCaptures(m.to, p); 
+                    this.spawnDust(this.nodes[m.to].x, this.nodes[m.to].y);
+                }
+                else { 
+                    this.addLog("Environmental hazard! Returned to previous tile."); 
+                    p.boost = 0; // Lost speed boost
+                }
+
+                // Amazon Power: If survived debuff (failure) or landed on danger zone, gain boost
+                // But specifically for landing on it:
+                if (!failed && m.to.includes('AMZ') && this.nodes[m.to].type === 'DEBUFF') {
+                    p.boost = 2;
+                    this.addLog("Amazon Survival: Speed Boost +2!");
+                } else {
+                    p.boost = 0;
+                }
+
+                const hasExtra = p.extraMove;
+                p.extraMove = false;
+                this.pendingMove = null;
+                
+                if (hasExtra && !failed) {
+                    this.state = 'ROLL';
+                    this.selected = null;
+                    this.dests = [];
+                    this.refresh();
+                } else {
+                    this.endTurn();
+                }
             }
 
             checkCaptures(id, p) {
+                // Caatinga Power: Immunity to capture while inside Caatinga paths
+                if (id.includes('CAA')) {
+                    this.addLog("Caatinga Power: Hidden from enemies!");
+                    return;
+                }
+
                 const rivals = this.pawns.filter(x => x.node === id && x.side !== p.side);
                 if (rivals.length > 0 && id !== 'START') {
-                    this.pawns = this.pawns.filter(x => !rivals.includes(x));
-                    this.addLog(`Captured ${rivals.length} opponent(s)!`);
+                    // Check if rival has shield
+                    const protectedRival = rivals.find(r => r.shield);
+                    if (protectedRival) {
+                        protectedRival.shield = false;
+                        this.addLog("Rival shield blocked capture!");
+                    } else {
+                        this.pawns = this.pawns.filter(x => !rivals.includes(x));
+                        this.addLog(`Captured ${rivals.length} opponent(s)!`);
+                    }
                 }
             }
 
@@ -506,8 +607,51 @@
                 const guards = this.pawns.filter(x => x.side === 'GUARD').length;
                 const invaders = this.pawns.filter(x => x.side === 'INVADER').length;
                 if (invaders === 0 || guards === 0) {
-                    document.getElementById('win-txt').innerText = invaders === 0 ? "GUARDIANS WON!" : "INVADERS WON!";
-                    document.getElementById('win-modal').style.display = 'flex';
+                    this.showWin(invaders === 0 ? "GUARDIANS WON!" : "INVADERS WON!");
+                }
+            }
+
+            showWin(txt) {
+                document.getElementById('win-txt').innerText = txt;
+                document.getElementById('win-modal').style.display = 'flex';
+                this.spawnConfetti();
+                setInterval(() => this.spawnConfetti(), 3000);
+            }
+
+            spawnDust(x, y) {
+                const board = document.getElementById('board-viewer');
+                for (let i = 0; i < 8; i++) {
+                    const d = document.createElement('div');
+                    d.className = 'dust-particle';
+                    d.style.left = (x / 1024 * board.offsetWidth) + 'px';
+                    d.style.top = (y / 1024 * board.offsetHeight) + 'px';
+                    const dx = (Math.random() - 0.5) * 100;
+                    const dy = (Math.random() - 0.5) * 100;
+                    d.style.setProperty('--dx', dx + 'px');
+                    d.style.setProperty('--dy', dy + 'px');
+                    d.style.animation = 'dustAnim 0.6s ease-out forwards';
+                    board.appendChild(d);
+                    setTimeout(() => d.remove(), 600);
+                }
+            }
+
+            spawnConfetti() {
+                const modal = document.getElementById('win-modal');
+                const colors = ['#f1c40f', '#e74c3c', '#2ecc71', '#3498db', '#9b59b6'];
+                for (let i = 0; i < 100; i++) {
+                    const c = document.createElement('div');
+                    c.className = 'confetti-particle';
+                    c.style.left = Math.random() * 100 + '%';
+                    c.style.top = '-10%';
+                    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    const duration = Math.random() * 3 + 2;
+                    c.style.transition = `all ${duration}s ease-in`;
+                    modal.appendChild(c);
+                    setTimeout(() => {
+                        c.style.top = '110%';
+                        c.style.left = (parseFloat(c.style.left) + (Math.random() - 0.5) * 20) + '%';
+                    }, 10);
+                    setTimeout(() => c.remove(), duration * 1000);
                 }
             }
         }
