@@ -309,6 +309,12 @@
                 this.turn = 'INVADER'; this.dice = 0; this.state = 'ROLL';
                 this.nodes = {}; this.pawns = []; this.selected = null;
                 this.dests = []; this.pendingMove = null;
+                this.activeDebuffImg = null;
+                this.isWarp = false;
+                
+                // Track biome control
+                this.progress = { INVADER: new Set(), GUARD: new Set() };
+
                 this.buildGraph(); this.buildPawns(); this.bindUI(); this.refresh();
                 window.game = this;
             }
@@ -564,15 +570,19 @@
                     p.node = m.to; 
                     this.checkCaptures(m.to, p); 
                     this.spawnDust(this.nodes[m.to].x, this.nodes[m.to].y);
+
+                    // Biome control tracking
+                    if (this.nodes[m.to].type === 'BIOME') {
+                        this.progress[p.side].add(m.to);
+                        this.addLog(`${p.side} reached ${m.to}! (${this.progress[p.side].size}/6 biomes)`);
+                    }
                 }
                 else { 
-                    // Movement already updated by handleDebuffPenalty
                     p.node = m.to;
-                    p.boost = 0; // Lost speed boost
+                    p.boost = 0; 
                 }
 
                 // Amazon Power: If survived debuff (failure) or landed on danger zone, gain boost
-                // But specifically for landing on it:
                 if (!failed && m.to.includes('AMZ') && this.nodes[m.to].type === 'DEBUFF') {
                     p.boost = 2;
                     this.addLog("Amazon Survival: Speed Boost +2!");
@@ -641,11 +651,14 @@
             }
 
             checkWin() {
-                const guards = this.pawns.filter(x => x.side === 'GUARD').length;
-                const invaders = this.pawns.filter(x => x.side === 'INVADER').length;
-                if (invaders === 0 || guards === 0) {
-                    this.showWin(invaders === 0 ? "GUARDIANS WON!" : "INVADERS WON!");
-                }
+                const guardsLeft = this.pawns.filter(x => x.side === 'GUARD').length;
+                const invadersLeft = this.pawns.filter(x => x.side === 'INVADER').length;
+                
+                if (invadersLeft === 0) return this.showWin("GUARDIANS WON BY ELIMINATION!");
+                if (guardsLeft === 0) return this.showWin("INVADERS WON BY ELIMINATION!");
+
+                if (this.progress.INVADER.size === 6) return this.showWin("INVADERS CONQUERED ALL BIOMES!");
+                if (this.progress.GUARD.size === 6) return this.showWin("GUARDIANS CONQUERED ALL BIOMES!");
             }
 
             showWin(txt) {
