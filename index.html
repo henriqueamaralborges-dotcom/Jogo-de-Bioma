@@ -274,10 +274,13 @@
             'COS-CAA': [[78,455],[82,405],[90,355],[102,305],[118,258],[138,212],[158,168],[175,125],[172,82]]
         };
 
-        const DEBUFF_IMAGES = [
-            'Jararaca.certo.png', 'aranha marrom.certo.png', 'jacaré,.png',
-            'onça pintada.ceerto.png', 'sucuri.certo.png'
-        ];
+        const DEBUFF_IMAGES = {
+            'Jararaca.certo.png': { n: 'Jararaca', p: 2 },
+            'aranha marrom.certo.png': { n: 'Brown Spider', p: 1 },
+            'jacaré,.png': { n: 'Alligator', p: 3 },
+            'onça pintada.ceerto.png': { n: 'Jaguar', p: 4 },
+            'sucuri.certo.png': { n: 'South Am. Boa', p: 6 }
+        };
 
         function startGame() {
             document.getElementById('start-screen').style.display = 'none';
@@ -298,7 +301,7 @@
 
         function closeDebuff() {
             document.getElementById('debuff-overlay').style.display = 'none';
-            if (window.game) window.game.completeMove(true);
+            if (window.game) window.game.handleDebuffPenalty();
         }
 
         class JogoEngine {
@@ -494,7 +497,9 @@
                         p.shield = false;
                         this.completeMove();
                     } else {
-                        const img = DEBUFF_IMAGES[Math.floor(Math.random() * DEBUFF_IMAGES.length)];
+                        const imgList = Object.keys(DEBUFF_IMAGES);
+                        const img = imgList[Math.floor(Math.random() * imgList.length)];
+                        this.activeDebuffImg = img;
                         document.getElementById('debuff-card-img').src = img;
                         document.getElementById('debuff-overlay').style.display = 'flex';
                     }
@@ -504,6 +509,35 @@
                     this.completeMove(); 
                 }
             }
+
+            handleDebuffPenalty() {
+                const info = DEBUFF_IMAGES[this.activeDebuffImg];
+                this.addLog(`${info.n} penalty: Move back ${info.p} tiles!`);
+                
+                // Find node back
+                let current = this.pendingMove.from; // Penalty starts from where they were going to stay
+                for (let i = 0; i < info.p; i++) {
+                    const next = this.findClosestToStart(current);
+                    if (next === current) break;
+                    current = next;
+                }
+                
+                this.pendingMove.to = current; // Update target to the penalty node
+                this.completeMove(true);
+            }
+
+            findClosestToStart(id) {
+                if (id === 'START') return 'START';
+                // Simple heuristic: which neighbor is closest to CX, CY distance-wise
+                let best = id; let minD = this.dist(this.nodes[id].x, this.nodes[id].y, CX, CY);
+                this.nodes[id].links.forEach(nb => {
+                    const d = this.dist(this.nodes[nb].x, this.nodes[nb].y, CX, CY);
+                    if (d < minD) { minD = d; best = nb; }
+                });
+                return best;
+            }
+
+            dist(x1, y1, x2, y2) { return Math.sqrt((x2-x1)**2 + (y2-y1)**2); }
 
             triggerBuff() {
                 const buffs = ['EXTRA','SHIELD','WARP'];
