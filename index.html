@@ -315,8 +315,8 @@
                 
                 // Track biome control
                 this.progress = { INVADER: new Set(), GUARD: new Set() };
+                this.capturing = {}; // { biomeId: { side, count } }
                 this.startTime = Date.now();
-                this.timerInterval = setInterval(() => this.updateTimer(), 1000);
 
                 this.buildGraph(); this.buildPawns(); this.bindUI(); this.refresh();
                 window.game = this;
@@ -414,7 +414,10 @@
                         c.setAttribute('cx', n.x); c.setAttribute('cy', n.y);
                         c.setAttribute('r', n.type === 'START' ? 60 : 40);
                         c.setAttribute('class', n.type === 'START' ? 'node-start' : 'node-biome');
-                        c.setAttribute('id', `tile-${n.id}`); g.appendChild(c);
+                        c.setAttribute('id', `tile-${n.id}`); 
+                        c.setAttribute('fill', 'rgba(255,255,255,0.01)'); // Ensure click area
+                        c.setAttribute('pointer-events', 'all');
+                        g.appendChild(c);
                     }
                     layer.appendChild(g);
                 });
@@ -583,17 +586,14 @@
                     this.checkCaptures(m.to, p); 
                     this.spawnDust(this.nodes[m.to].x, this.nodes[m.to].y);
 
-                    // Biome control tracking
+                    // Biome Domination logic (CS Style)
                     if (this.nodes[m.to].type === 'BIOME') {
-                        this.progress[p.side].add(m.to);
-                        this.addLog(`${p.side} DOMINATED ${m.to}! (${this.progress[p.side].size}/6 biomes)`);
-                        
-                        // Visual update: change circle style
-                        const biomeEl = document.getElementById(`tile-${m.to}`);
-                        if (biomeEl) {
-                             biomeEl.style.stroke = p.color;
-                             biomeEl.style.strokeWidth = '12px';
-                             biomeEl.style.filter = `drop-shadow(0 0 10px ${p.color})`;
+                        if (this.progress[p.side].has(m.to)) return;
+
+                        const rivals = this.pawns.filter(x => x.node === m.to && x.side !== p.side);
+                        if (rivals.length === 0) {
+                            this.addLog(`${p.side} started capture in ${m.to}!`);
+                            this.capturing[m.to] = { side: p.side, count: 0 };
                         }
                     }
                 }
@@ -647,8 +647,42 @@
 
             endTurn() {
                 this.turn = this.turn === 'INVADER' ? 'GUARD' : 'INVADER';
+                
+                // Update capturing progress
+                Object.keys(this.capturing).forEach(bid => {
+                    const cap = this.capturing[bid];
+                    if (cap.side === this.turn) { // Our turn again, and we are still capping
+                        // Check if any of our pawns are still there
+                        const owners = this.pawns.filter(x => x.node === bid && x.side === cap.side);
+                        if (owners.length > 0) {
+                            cap.count++;
+                            if (cap.count >= 1) { // 1 round sustained = dominated
+                                this.dominate(bid, cap.side);
+                                delete this.capturing[bid];
+                            }
+                        } else {
+                            delete this.capturing[bid];
+                        }
+                    }
+                });
+
                 this.state = 'ROLL'; this.selected = null; this.dests = [];
                 this.refresh(); this.checkWin();
+            }
+
+            dominate(bid, side) {
+                this.progress[side].add(bid);
+                this.addLog(`${side} DOMINATED ${bid}!`);
+                const biomeEl = document.getElementById(`tile-${bid}`);
+                if (biomeEl) {
+                    const color = side === 'INVADER' ? 'var(--invader)' : 'var(--guardian)';
+                    biomeEl.style.stroke = color;
+                    biomeEl.style.strokeWidth = '12px';
+                    biomeEl.style.filter = `drop-shadow(0 0 15px ${color})`;
+                    biomeEl.style.strokeDasharray = '0';
+                    biomeEl.style.fill = color;
+                    biomeEl.style.fillOpacity = '0.2';
+                }
             }
 
             refresh() {
