@@ -514,30 +514,32 @@
                 const info = DEBUFF_IMAGES[this.activeDebuffImg];
                 this.addLog(`${info.n} penalty: Move back ${info.p} tiles!`);
                 
-                // Find node back
-                let current = this.pendingMove.from; // Penalty starts from where they were going to stay
-                for (let i = 0; i < info.p; i++) {
-                    const next = this.findClosestToStart(current);
-                    if (next === current) break;
-                    current = next;
-                }
+                // Better pathfinding back to START
+                const path = this.findPathToStart(this.pendingMove.to);
+                // The path starts with 'to'. We want the step at index info.p (or last if path shorter)
+                const targetIdx = Math.min(info.p, path.length - 1);
+                const finalNode = path[targetIdx];
                 
-                this.pendingMove.to = current; // Update target to the penalty node
+                this.pendingMove.to = finalNode; 
                 this.completeMove(true);
             }
 
-            findClosestToStart(id) {
-                if (id === 'START') return 'START';
-                // Simple heuristic: which neighbor is closest to CX, CY distance-wise
-                let best = id; let minD = this.dist(this.nodes[id].x, this.nodes[id].y, CX, CY);
-                this.nodes[id].links.forEach(nb => {
-                    const d = this.dist(this.nodes[nb].x, this.nodes[nb].y, CX, CY);
-                    if (d < minD) { minD = d; best = nb; }
-                });
-                return best;
+            findPathToStart(startId) {
+                const q = [[startId]];
+                const visited = new Set([startId]);
+                while (q.length > 0) {
+                    const path = q.shift();
+                    const curr = path[path.length - 1];
+                    if (curr === 'START') return path;
+                    this.nodes[curr].links.forEach(nb => {
+                        if (!visited.has(nb)) {
+                            visited.add(nb);
+                            q.push([...path, nb]);
+                        }
+                    });
+                }
+                return [startId];
             }
-
-            dist(x1, y1, x2, y2) { return Math.sqrt((x2-x1)**2 + (y2-y1)**2); }
 
             triggerBuff() {
                 const buffs = ['EXTRA','SHIELD','WARP'];
@@ -564,7 +566,8 @@
                     this.spawnDust(this.nodes[m.to].x, this.nodes[m.to].y);
                 }
                 else { 
-                    this.addLog("Environmental hazard! Returned to previous tile."); 
+                    // Movement already updated by handleDebuffPenalty
+                    p.node = m.to;
                     p.boost = 0; // Lost speed boost
                 }
 
