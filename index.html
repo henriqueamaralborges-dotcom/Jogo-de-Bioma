@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biomes at War: Map Trail</title>
+        <title>Biomes at War</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
@@ -40,7 +40,7 @@
             align-items: center;
             justify-content: center;
             background-image: 
-                linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+                linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
                 url('mapa.png');
             background-size: cover;
             background-position: center;
@@ -56,26 +56,32 @@
             margin-bottom: 50px;
             text-align: center;
             line-height: 1.2;
-            animation: bounce 2s infinite ease-in-out;
+            animation: pulseTitle 2s infinite ease-in-out;
         }
 
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
+        @keyframes pulseTitle {
+            0%, 100% { transform: scale(1); text-shadow: 6px 6px 0px #ff3300; }
+            50% { transform: scale(1.05); text-shadow: 10px 10px 0px #ff0000; }
         }
 
         .start-btn {
             font-family: 'Press Start 2P', cursive;
-            padding: 25px 50px;
+            padding: 30px 60px;
             background: #27ae60;
             color: #fff;
             border: 6px solid #fff;
             cursor: pointer;
             box-shadow: 8px 8px 0px #000;
             transition: 0.1s;
+            animation: pulseBtn 1.5s infinite ease-in-out;
         }
-        .start-btn:hover { background: #2ecc71; transform: scale(1.1); }
+        .start-btn:hover { background: #2ecc71; animation-play-state: paused; }
         .start-btn:active { transform: translate(4px, 4px); box-shadow: 4px 4px 0px #000; }
+
+        @keyframes pulseBtn {
+            0%, 100% { transform: scale(1); box-shadow: 8px 8px 0px #000; }
+            50% { transform: scale(1.1); box-shadow: 12px 12px 0px rgba(0,0,0,0.5); }
+        }
 
         header {
             grid-area: header;
@@ -87,7 +93,7 @@
             border-bottom: 8px solid #333;
             z-index: 100;
         }
-        .logo { font-family: 'Press Start 2P'; font-size: 1.5rem; color: #fff; }
+        .logo { font-family: 'Press Start 2P'; font-size: 1.5rem; color: #fff; text-shadow: 3px 3px 0 #000; }
 
         #board-viewer {
             grid-area: board;
@@ -173,8 +179,8 @@
 </head>
 <body>
     <div id="start-screen">
-        <h1 class="pixel-title">BIOMAS<br>EM GUERRA</h1>
-        <button class="start-btn" onclick="startGame()">INICIAR JOGO</button>
+        <h1 class="pixel-title">BIOMES<br>AT WAR</h1>
+        <button class="start-btn" onclick="startGame()">START GAME</button>
     </div>
 
     <!-- Transition Screen with GIF -->
@@ -183,20 +189,20 @@
     </div>
 
     <header>
-        <div class="logo">BIOMAS EM GUERRA</div>
-        <div id="stat-turn" style="color:var(--invader); font-weight: 900; font-size: 1.2rem; font-family:'Press Start 2P'">TURNO: INVASORES</div>
+        <div class="logo">BIOMES AT WAR</div>
+        <div id="stat-turn" style="color:var(--invader); font-weight: 900; font-size: 1.2rem; font-family:'Press Start 2P'">TURN: INVADERS</div>
     </header>
 
     <div id="board-viewer">
         <!-- Debuff Card Overlay -->
         <div id="debuff-overlay" style="display:none; position:absolute; inset:0; background:rgba(255,0,0,0.6); z-index:2000; display:none; flex-direction:column; align-items:center; justify-content:center; animation: fadeIn 0.3s;">
             <div style="background:#111; border:8px solid var(--highlight); padding:30px; text-align:center; max-width:400px; box-shadow: 15px 15px 0px rgba(0,0,0,0.8);">
-                <h2 style="font-family:'Press Start 2P'; font-size:1.5rem; color:#ff3300; margin-bottom:20px;">PERIGO!</h2>
+                <h2 style="font-family:'Press Start 2P'; font-size:1.5rem; color:#ff3300; margin-bottom:20px;">DANGER!</h2>
                 <div id="debuff-img-container" style="border:4px solid #333; margin-bottom:20px; background:#000; padding: 10px;">
                     <img id="debuff-card-img" src="" style="max-width:250px; display:block;">
                 </div>
-                <p id="debuff-msg" style="font-family:'Silkscreen'; font-size:1.2rem; margin-bottom:25px; color:#aaa;">Um predador natural te atrasou!</p>
-                <button class="btn" style="background:#ff3300; color:#fff; border-color:#fff;" onclick="closeDebuff()">VOLTAR</button>
+                <p id="debuff-msg" style="font-family:'Silkscreen'; font-size:1.2rem; margin-bottom:25px; color:#aaa;">A natural predator has delayed you!</p>
+                <button class="btn" style="background:#ff3300; color:#fff; border-color:#fff;" onclick="closeDebuff()">GO BACK</button>
             </div>
         </div>
 
@@ -210,15 +216,15 @@
     <div id="sidebar">
         <div class="ui-box">
             <div id="dice-view">🎲</div>
-            <button class="btn" id="roll-btn">ROLAR DADO</button>
+            <button class="btn" id="roll-btn">ROLL DICE</button>
         </div>
-        <div id="game-hint" class="hint">ROLE O DADO!</div>
+        <div id="game-hint" class="hint">ROLL THE DICE!</div>
         <div id="log"></div>
     </div>
 
     <div id="win-modal">
-        <h1 id="win-txt" style="font-family: Fredoka One; font-size: 5rem; color: #fff; margin-bottom: 20px;">VENCEDOR!</h1>
-        <button class="btn" style="width: auto; padding: 25px 60px;" onclick="location.reload()">NOVO JOGO</button>
+        <h1 id="win-txt" style="font-family: Fredoka One; font-size: 5rem; color: #fff; margin-bottom: 20px;">WINNER!</h1>
+        <button class="btn" style="width: auto; padding: 25px 60px;" onclick="location.reload()">NEW GAME</button>
     </div>
 
     <script>
@@ -228,9 +234,9 @@
             { id: 'CAA', n: 'Caatinga',       x: 170, y:  55, diff: 0.15 },
             { id: 'PAN', n: 'Pantanal',        x: 755, y:  95, diff: 0.15 },
             { id: 'CER', n: 'Cerrado',         x: 930, y: 480, diff: 0.15 },
-            { id: 'AMZ', n: 'Amazônia',        x: 800, y: 880, diff: 0.5 },
-            { id: 'MAT', n: 'Mata Atlântica',  x: 255, y: 895, diff: 0.05 },
-            { id: 'COS', n: 'Costa Rochosa',   x:  80, y: 490, diff: 0.15 }
+            { id: 'AMZ', n: 'Amazon',          x: 800, y: 880, diff: 0.5 },
+            { id: 'MAT', n: 'Atlantic Forest', x: 255, y: 895, diff: 0.05 },
+            { id: 'COS', n: 'Rocky Coast',     x:  80, y: 490, diff: 0.15 }
         ];
 
         const RADS = {
@@ -293,7 +299,20 @@
                     const pts = RADS[b.id]; let prev = 'START';
                     pts.forEach((p, i) => {
                         const id = `r-${b.id}-${i}`;
-                        const type = (Math.random() < b.diff) ? 'DEBUFF' : 'STEP';
+                        // Improved distribution: alternating pattern or random based on weighted diff
+                        let isDebuff = false;
+                        if (b.id === 'AMZ') {
+                             // Amazon: high frequency, guaranteed every 2nd or 3rd tile
+                             isDebuff = (i % 2 === 0) || (Math.random() < 0.4);
+                        } else if (b.id === 'MAT') {
+                             // Atlantic Forest: very low frequency
+                             isDebuff = (i > 0) && (Math.random() < 0.05);
+                        } else {
+                             // Normal biomes: periodic or scattered
+                             isDebuff = (i % 5 === 2) || (Math.random() < 0.1);
+                        }
+
+                        const type = isDebuff ? 'DEBUFF' : 'STEP';
                         this.addN(id, p[0], p[1], type);
                         this.linkN(prev, id); prev = id;
                     });
@@ -309,7 +328,11 @@
 
                     pts.forEach((p, j) => {
                         const id = `c-${key}-${j}`;
-                        const type = (Math.random() < ringDiff) ? 'DEBUFF' : 'STEP';
+                        // Ring debuffs: Clusters near dangerous biomes
+                        let isDebuff = Math.random() < ringDiff;
+                        if (toId === 'AMZ' && j > 4) isDebuff = true; // Danger zone approaching Amazon
+                        
+                        const type = isDebuff ? 'DEBUFF' : 'STEP';
                         this.addN(id, p[0], p[1], type);
                         this.linkN(prev, id); prev = id;
                     });
@@ -442,7 +465,7 @@
             completeMove(failed = false) {
                 const m = this.pendingMove;
                 if (!failed) { m.pawn.node = m.to; this.checkCaptures(m.to, m.pawn); }
-                else { this.addLog("Perigo ambiental! Voltou à casa anterior."); }
+                else { this.addLog("Environmental hazard! Returned to previous tile."); }
                 this.pendingMove = null; this.endTurn();
             }
 
@@ -463,10 +486,10 @@
             refresh() {
                 document.getElementById('roll-btn').disabled = (this.state !== 'ROLL');
                 const turnEl = document.getElementById('stat-turn');
-                turnEl.innerText = this.turn === 'INVADER' ? 'TURNO: INVASORES' : 'TURNO: GUARDIÕES';
+                turnEl.innerText = this.turn === 'INVADER' ? 'TURN: INVADERS' : 'TURN: GUARDIANS';
                 turnEl.style.color = this.turn === 'INVADER' ? 'var(--invader)' : 'var(--guardian)';
                 const hint = document.getElementById('game-hint');
-                hint.innerText = this.state === 'ROLL' ? "ROLE O DADO!" : (this.state === 'PICK' ? "ESCOLHA SUA PEÇA!" : "ESCOLHA O DESTINO!");
+                hint.innerText = this.state === 'ROLL' ? "ROLL THE DICE!" : (this.state === 'PICK' ? "CHOOSE YOUR PAWN!" : "CHOOSE YOUR DESTINATION!");
                 document.querySelectorAll('.node-tile, .node-biome, .node-start').forEach(el => el.classList.remove('target-active'));
                 this.dests.forEach(id => document.getElementById(`tile-${id}`)?.classList.add('target-active'));
                 this.drawPawns();
