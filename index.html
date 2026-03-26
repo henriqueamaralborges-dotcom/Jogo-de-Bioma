@@ -316,7 +316,7 @@
                 // Track biome control
                 this.progress = { INVADER: new Set(), GUARD: new Set() };
                 this.capturing = {}; // { biomeId: { side, count } }
-                this.startTime = Date.now();
+                this.startTime = null; // Wait for biome reach
                 this.timerInterval = setInterval(() => this.updateTimer(), 1000);
 
                 this.buildGraph(); this.buildPawns(); this.bindUI(); this.refresh();
@@ -324,6 +324,7 @@
             }
 
             updateTimer() {
+                if (!this.startTime) return;
                 const diff = Math.floor((Date.now() - this.startTime) / 1000);
                 const m = Math.floor(diff / 60).toString().padStart(2, '0');
                 const s = (diff % 60).toString().padStart(2, '0');
@@ -593,6 +594,10 @@
 
                         const rivals = this.pawns.filter(x => x.node === m.to && x.side !== p.side);
                         if (rivals.length === 0) {
+                            if (!this.startTime) {
+                                this.startTime = Date.now(); 
+                                this.addLog("GAME TIMER STARTED! First biome reached.");
+                            }
                             this.addLog(`${p.side} started capture in ${m.to}!`);
                             this.capturing[m.to] = { side: p.side, count: 0 };
                         }
@@ -600,6 +605,8 @@
                 }
                 else { 
                     p.node = m.to;
+                    this.checkCaptures(m.to, p); // Capture rivals even at the penalty site
+                    this.spawnDust(this.nodes[m.to].x, this.nodes[m.to].y);
                     p.boost = 0; 
                 }
 
@@ -626,6 +633,8 @@
             }
 
             checkCaptures(id, p) {
+                if (id === 'START') return;
+
                 // Caatinga Power: Immunity to capture while inside Caatinga paths
                 if (id.includes('CAA')) {
                     this.addLog("Caatinga Power: Hidden from enemies!");
@@ -633,15 +642,21 @@
                 }
 
                 const rivals = this.pawns.filter(x => x.node === id && x.side !== p.side);
-                if (rivals.length > 0 && id !== 'START') {
+                if (rivals.length > 0) {
                     // Check if rival has shield
                     const protectedRival = rivals.find(r => r.shield);
                     if (protectedRival) {
                         protectedRival.shield = false;
                         this.addLog("Rival shield blocked capture!");
                     } else {
-                        this.pawns = this.pawns.filter(x => !rivals.includes(x));
-                        this.addLog(`Captured ${rivals.length} opponent(s)!`);
+                        // Remove captured pawns from this.pawns
+                        const idsToRem = rivals.map(r => r.id);
+                        this.pawns = this.pawns.filter(x => !idsToRem.includes(x.id));
+                        this.addLog(`CAPTURED ${rivals.length} OPPONENT(S)!`);
+                        this.spawnDust(this.nodes[id].x, this.nodes[id].y); // Capture effects
+                        
+                        // Restart any capture on this tile
+                        if (this.capturing[id]) delete this.capturing[id];
                     }
                 }
             }
