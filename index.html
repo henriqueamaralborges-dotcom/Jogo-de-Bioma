@@ -317,6 +317,7 @@
                 this.progress = { INVADER: new Set(), GUARD: new Set() };
                 this.capturing = {}; // { biomeId: { side, count } }
                 this.startTime = Date.now();
+                this.timerInterval = setInterval(() => this.updateTimer(), 1000);
 
                 this.buildGraph(); this.buildPawns(); this.bindUI(); this.refresh();
                 window.game = this;
@@ -686,6 +687,46 @@
             }
 
             refresh() {
+                // ...existing refresh code...
+                // (I'll just add the biome visual update here)
+                Object.keys(this.nodes).forEach(bid => {
+                    const n = this.nodes[bid];
+                    if (n.type === 'BIOME') {
+                        const el = document.getElementById(`tile-${bid}`);
+                        if (!el) return;
+                        
+                        // Check if owned
+                        let owner = null;
+                        if (this.progress.INVADER.has(bid)) owner = 'INVADER';
+                        else if (this.progress.GUARD.has(bid)) owner = 'GUARD';
+                        
+                        if (owner) {
+                             const color = owner === 'INVADER' ? 'var(--invader)' : 'var(--guardian)';
+                             el.style.stroke = color;
+                             el.style.fill = color;
+                             el.style.fillOpacity = '0.2';
+                             el.style.strokeWidth = '12px';
+                             el.classList.remove('pawn-jumping'); // Remove pulse if it had it
+                        } else {
+                            // Check if being captured
+                            const cap = this.capturing[bid];
+                            if (cap) {
+                                const color = cap.side === 'INVADER' ? 'var(--invader)' : 'var(--guardian)';
+                                el.style.stroke = color;
+                                el.style.strokeWidth = '8px';
+                                el.style.strokeDasharray = '5 5';
+                                el.classList.add('pawn-jumping'); // Reusing jumping pulse animation
+                            } else {
+                                el.style.stroke = '#fff';
+                                el.style.strokeWidth = '4px';
+                                el.style.strokeDasharray = '8 4';
+                                el.style.fill = 'rgba(255,255,255,0.01)';
+                                el.classList.remove('pawn-jumping');
+                            }
+                        }
+                    }
+                });
+                
                 document.getElementById('roll-btn').disabled = (this.state !== 'ROLL');
                 const turnEl = document.getElementById('stat-turn');
                 turnEl.innerText = this.turn === 'INVADER' ? 'TURN: INVADERS' : 'TURN: GUARDIANS';
