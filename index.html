@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biomas em Guerra: A Trilha do Mapa</title>
+    <title>Biomes at War: Map Trail</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Outfit:wght@400;900&display=swap" rel="stylesheet">
@@ -77,7 +77,7 @@
 
         #log { flex: 1; background: #000; border-radius: 12px; padding: 15px; overflow-y: auto; font-size: 0.82rem; color: #888; border: 1px solid #222; }
 
-        /* Casas do jogo (visíveis em cima do mapa) */
+        /* Game tiles (visible over the map) */
         .node-tile {
             fill: rgba(255,255,255,0.2);
             stroke: rgba(255,255,255,0.5);
@@ -129,12 +129,12 @@
 </head>
 <body>
     <header>
-        <div class="logo">BIOMAS EM GUERRA</div>
-        <div id="stat-turn" style="color:var(--invader); font-weight: 900; font-size: 1.5rem;">TURNO: INVASORES</div>
+        <div class="logo">BIOMES AT WAR</div>
+        <div id="stat-turn" style="color:var(--invader); font-weight: 900; font-size: 1.5rem;">TURN: INVADERS</div>
     </header>
 
     <div id="board-viewer">
-        <div id="debuff-alert">⚠️ DEBUFF! VOLTA PRA CASA ANTERIOR!</div>
+        <div id="debuff-alert">⚠️ DEBUFF! RETURN TO PREVIOUS TILE!</div>
         <svg id="game-svg" viewBox="0 0 1024 1024" preserveAspectRatio="xMidYMid meet">
             <image href="mapa.png" x="0" y="0" width="1024" height="1024" />
             <g id="lay-nodes"></g> 
@@ -145,36 +145,36 @@
     <div id="sidebar">
         <div class="ui-box">
             <div id="dice-view">🎲</div>
-            <button class="btn" id="roll-btn">ROLAR DADO</button>
+            <button class="btn" id="roll-btn">ROLL DICE</button>
         </div>
-        <div id="game-hint" class="hint">ROLE O DADO</div>
+        <div id="game-hint" class="hint">ROLL THE DICE</div>
         <div id="log"></div>
     </div>
 
     <div id="win-modal">
-        <h1 id="win-txt" style="font-family: Fredoka One; font-size: 5rem; color: #fff; margin-bottom: 20px;">VENCERAM!</h1>
-        <button class="btn" style="width: auto; padding: 25px 60px;" onclick="location.reload()">NOVA PARTIDA</button>
+        <h1 id="win-txt" style="font-family: Fredoka One; font-size: 5rem; color: #fff; margin-bottom: 20px;">WON!</h1>
+        <button class="btn" style="width: auto; padding: 25px 60px;" onclick="location.reload()">NEW GAME</button>
     </div>
 
     <script>
         // =========================================================
-        // COORDENADAS MANUAIS - PIXEL A PIXEL COM O MAPA 1024x1024
-        // Agora viewBox = 0 0 1024 1024 = coordenadas = pixels do PNG
+        // MANUAL COORDINATES - PIXEL BY PIXEL WITH THE 1024x1024 MAP
+        // Now viewBox = 0 0 1024 1024 = coordinates = PNG pixels
         // =========================================================
 
-        const CX = 510, CY = 500; // Centro "Start" do mapa
+        const CX = 510, CY = 500; // Center "Start" of the map
 
         const BIOMAS = [
             { id: 'CAA', n: 'Caatinga',       x: 170, y:  55 },
             { id: 'PAN', n: 'Pantanal',        x: 755, y:  95 },
             { id: 'CER', n: 'Cerrado',         x: 930, y: 480 },
-            { id: 'AMZ', n: 'Amazônia',        x: 800, y: 880 },
-            { id: 'MAT', n: 'Mata Atlântica',  x: 255, y: 895 },
-            { id: 'COS', n: 'Costão Rochoso',  x:  80, y: 490 }
+            { id: 'AMZ', n: 'Amazon',          x: 800, y: 880 },
+            { id: 'MAT', n: 'Atlantic Forest', x: 255, y: 895 },
+            { id: 'COS', n: 'Rocky Coast',     x:  80, y: 490 }
         ];
 
-        // Trilha radial: cada sub-array = [x, y] de cada casinha marrom
-        // do centro (Start) até o bioma
+        // Radial trail: each sub-array = [x, y] of each brown tile
+        // from the center (Start) to the biome
         const RADS = {
             'CAA': [
                 [478,460],[450,415],[425,370],[398,325],[370,280],[340,235],[308,188],[268,145],[218,100]
@@ -196,7 +196,7 @@
             ]
         };
 
-        // Anel circular externo: casas entre cada par de biomas
+        // Outer circular ring: tiles between each pair of biomes
         const RING = {
             'CAA-PAN': [
                 [222,62],[278,48],[338,38],[398,35],[458,35],[518,40],[578,50],[638,62],[698,80]
@@ -218,7 +218,7 @@
             ]
         };
 
-        // Quais índices (0-based) no anel circular são DEBUFF (casinhas vermelhas)
+        // Which indices (0-based) in the circular ring are DEBUFF (red tiles)
         const DEBUFF_AT = [2, 5, 7];
 
         class JogoEngine {
@@ -291,7 +291,7 @@
                     
                     if (n.type === 'STEP' || n.type === 'DEBUFF') {
                         const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                        const s = 32; // tamanho do tile
+                        const s = 32; // tile size
                         r.setAttribute('x', n.x - s/2);
                         r.setAttribute('y', n.y - s/2);
                         r.setAttribute('width', s);
@@ -412,7 +412,7 @@
                 const old = p.node;
                 p.node = id;
 
-                // Debuff: volta pro lugar anterior
+                // Debuff: return to previous location
                 if (this.nodes[id].type === 'DEBUFF') {
                     const alert = document.getElementById('debuff-alert');
                     alert.style.display = 'block';
@@ -423,11 +423,11 @@
                     }, 1500);
                 }
 
-                // Captura rival se estiver na mesma casa
+                // Capture rival if on the same tile
                 const rival = this.pawns.find(x => x.node === id && x.side !== p.side && x !== p);
                 if (rival && id !== 'START') {
                     this.pawns = this.pawns.filter(x => x !== rival);
-                    this.addLog('Capturou um oponente!');
+                    this.addLog('Captured an opponent!');
                 }
 
                 this.endTurn();
@@ -446,15 +446,15 @@
                 document.getElementById('roll-btn').disabled = (this.state !== 'ROLL');
 
                 const turnEl = document.getElementById('stat-turn');
-                turnEl.innerText = this.turn === 'INVADER' ? 'TURNO: INVASORES' : 'TURNO: GUARDIÕES';
+                turnEl.innerText = this.turn === 'INVADER' ? 'TURN: INVADERS' : 'TURN: GUARDIANS';
                 turnEl.style.color = this.turn === 'INVADER' ? 'var(--invader)' : 'var(--guardian)';
 
                 const hint = document.getElementById('game-hint');
-                if (this.state === 'ROLL') hint.innerText = "ROLE O DADO";
-                else if (this.state === 'PICK') hint.innerText = "CLIQUE NO PIÃO QUE PULANDO";
-                else hint.innerText = "CLIQUE NA CAIXA QUE BRILHA";
+                if (this.state === 'ROLL') hint.innerText = "ROLL THE DICE";
+                else if (this.state === 'PICK') hint.innerText = "CLICK ON THE JUMPING PAWN";
+                else hint.innerText = "CLICK ON THE GLOWING TILE";
 
-                // Highlight destinos
+                // Highlight destinations
                 document.querySelectorAll('.node-tile, .node-biome, .node-start').forEach(el => el.classList.remove('target-active'));
                 this.dests.forEach(id => {
                     const el = document.getElementById(`tile-${id}`);
@@ -476,8 +476,8 @@
             checkWin() {
                 const guards = this.pawns.filter(x => x.side === 'GUARD').length;
                 const invaders = this.pawns.filter(x => x.side === 'INVADER').length;
-                if (invaders === 0) this.showWin("GUARDIÕES VENCERAM!");
-                if (guards === 0) this.showWin("INVASORES VENCERAM!");
+                if (invaders === 0) this.showWin("GUARDIANS WON!");
+                if (guards === 0) this.showWin("INVADERS WON!");
             }
 
             showWin(txt) {
