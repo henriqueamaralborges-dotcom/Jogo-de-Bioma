@@ -207,6 +207,7 @@
 
     <header>
         <div class="logo">BIOMES AT WAR</div>
+        <div id="game-timer" style="font-family:'Press Start 2P'; font-size:1.2rem; color:#f1c40f; transition:0.3s; margin-left: auto; margin-right: 40px;">00:00</div>
         <div id="stat-turn" style="color:var(--invader); font-weight: 900; font-size: 1.2rem; font-family:'Press Start 2P'">TURN: INVADERS</div>
     </header>
 
@@ -314,9 +315,18 @@
                 
                 // Track biome control
                 this.progress = { INVADER: new Set(), GUARD: new Set() };
+                this.startTime = Date.now();
+                this.timerInterval = setInterval(() => this.updateTimer(), 1000);
 
                 this.buildGraph(); this.buildPawns(); this.bindUI(); this.refresh();
                 window.game = this;
+            }
+
+            updateTimer() {
+                const diff = Math.floor((Date.now() - this.startTime) / 1000);
+                const m = Math.floor(diff / 60).toString().padStart(2, '0');
+                const s = (diff % 60).toString().padStart(2, '0');
+                document.getElementById('game-timer').innerText = `${m}:${s}`;
             }
 
             buildGraph() {
@@ -420,10 +430,12 @@
                     const n = this.nodes[nid];
                     ps.forEach((p, idx) => {
                         const cols = Math.min(ps.length, 3);
-                        const ox = (idx % cols - (cols - 1) / 2) * 35;
-                        const oy = Math.floor(idx / cols) * 40;
+                        const isStart = nid === 'START';
+                        const gap = isStart ? 35 : 20; // Proximidade menor para círculos de biomas
+                        const ox = (idx % cols - (cols - 1) / 2) * gap;
+                        const oy = Math.floor(idx / cols) * (gap + 5);
                         const mg = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                        mg.setAttribute('transform', `translate(${n.x + ox}, ${n.y + oy - 10})`);
+                        mg.setAttribute('transform', `translate(${n.x + ox}, ${n.y + oy - (isStart ? 10 : 5)})`);
                         mg.setAttribute('class', 'pawn-g');
 
                         const body = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -574,7 +586,15 @@
                     // Biome control tracking
                     if (this.nodes[m.to].type === 'BIOME') {
                         this.progress[p.side].add(m.to);
-                        this.addLog(`${p.side} reached ${m.to}! (${this.progress[p.side].size}/6 biomes)`);
+                        this.addLog(`${p.side} DOMINATED ${m.to}! (${this.progress[p.side].size}/6 biomes)`);
+                        
+                        // Visual update: change circle style
+                        const biomeEl = document.getElementById(`tile-${m.to}`);
+                        if (biomeEl) {
+                             biomeEl.style.stroke = p.color;
+                             biomeEl.style.strokeWidth = '12px';
+                             biomeEl.style.filter = `drop-shadow(0 0 10px ${p.color})`;
+                        }
                     }
                 }
                 else { 
@@ -662,6 +682,7 @@
             }
 
             showWin(txt) {
+                clearInterval(this.timerInterval);
                 document.getElementById('win-txt').innerText = txt;
                 document.getElementById('win-modal').style.display = 'flex';
                 this.spawnConfetti();
