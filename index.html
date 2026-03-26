@@ -661,8 +661,6 @@
             }
 
             checkCaptures(id, p) {
-                if (id === 'START') return;
-
                 // Caatinga Power: Immunity to capture while inside Caatinga paths
                 if (id.includes('CAA')) {
                     this.addLog("Caatinga Power: Hidden from enemies!");
@@ -671,22 +669,15 @@
 
                 const rivals = this.pawns.filter(x => x.node === id && x.side !== p.side);
                 if (rivals.length > 0) {
-                    // Check if rival has shield
-                    const protectedRival = rivals.find(r => r.shield);
-                    if (protectedRival) {
-                        protectedRival.shield = false;
-                        this.addLog(`${protectedRival.side} SHIELD SAVED THEM FROM CAPTURE!`);
-                        this.spawnDust(this.nodes[id].x, this.nodes[id].y);
-                    } else {
-                        // Remove captured pawns from this.pawns
-                        const idsToRem = rivals.map(r => r.id);
-                        this.pawns = this.pawns.filter(x => !idsToRem.includes(x.id));
-                        this.addLog(`CAPTURED ${rivals.length} OPPONENT(S)!`);
-                        this.spawnDust(this.nodes[id].x, this.nodes[id].y); // Capture effects
-                        
-                        // Restart any capture on this tile
-                        if (this.capturing[id]) delete this.capturing[id];
-                    }
+                    // Shield only protects from debuffs now, not from captures (Dama style!)
+                    const idsToRem = rivals.map(r => r.id);
+                    this.pawns = this.pawns.filter(x => !idsToRem.includes(x.id));
+                    this.addLog(`CHESS-STYLE CAPTURE: ${rivals.length} OPPONENT(S)!`);
+                    this.spawnDust(this.nodes[id].x, this.nodes[id].y); // Capture effects
+                    this.spawnDust(this.nodes[id].x, this.nodes[id].y); // Double effect for capture
+                    
+                    // Restart any capture on this tile
+                    if (this.capturing[id]) delete this.capturing[id];
                 }
             }
 
