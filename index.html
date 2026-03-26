@@ -661,6 +661,8 @@
             }
 
             checkCaptures(id, p) {
+                if (id === 'START') return;
+
                 // Caatinga Power: Immunity to capture while inside Caatinga paths
                 if (id.includes('CAA')) {
                     this.addLog("Caatinga Power: Hidden from enemies!");
