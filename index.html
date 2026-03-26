@@ -6,38 +6,88 @@
     <title>Biomes at War: Map Trail</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Outfit:wght@400;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --guardian: #2ecc71;
-            --invader: #e74c3c;
-            --highlight: #f1c40f;
+            --guardian: #00ff66;
+            --invader: #ff3300;
+            --highlight: #ffffcc;
+            --bg-dark: #121212;
+            --pixel-border: 4px;
         }
 
-        * { margin:0; padding:0; box-sizing:border-box; }
+        * { margin:0; padding:0; box-sizing:border-box; image-rendering: pixelated; }
+
         body { 
-            background: #000; 
-            font-family: 'Outfit', sans-serif; 
+            background: var(--bg-dark); 
+            font-family: 'Silkscreen', sans-serif; 
             height: 100vh; 
             display: grid;
             grid-template-areas: "header header" "board sidebar";
-            grid-template-columns: 1fr 380px;
-            grid-template-rows: 80px 1fr;
+            grid-template-columns: 1fr 400px;
+            grid-template-rows: 90px 1fr;
             overflow: hidden;
             color: #fff;
         }
 
+        #start-screen {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+                url('mapa.png');
+            background-size: cover;
+            background-position: center;
+            border: 10px double #fff;
+            box-shadow: inset 0 0 100px #000;
+        }
+
+        .pixel-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 3.5rem;
+            color: var(--highlight);
+            text-shadow: 6px 6px 0px #ff3300, 10px 10px 0px #000;
+            margin-bottom: 50px;
+            text-align: center;
+            line-height: 1.2;
+            animation: bounce 2s infinite ease-in-out;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .start-btn {
+            font-family: 'Press Start 2P', cursive;
+            padding: 25px 50px;
+            background: #27ae60;
+            color: #fff;
+            border: 6px solid #fff;
+            cursor: pointer;
+            box-shadow: 8px 8px 0px #000;
+            transition: 0.1s;
+        }
+        .start-btn:hover { background: #2ecc71; transform: scale(1.1); }
+        .start-btn:active { transform: translate(4px, 4px); box-shadow: 4px 4px 0px #000; }
+
         header {
             grid-area: header;
-            background: #111;
+            background: #1a1a1a;
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0 40px;
-            border-bottom: 2px solid #333;
+            border-bottom: 8px solid #333;
             z-index: 100;
         }
-        .logo { font-family: 'Fredoka One'; font-size: 2rem; }
+        .logo { font-family: 'Press Start 2P'; font-size: 1.5rem; color: #fff; }
 
         #board-viewer {
             grid-area: board;
@@ -47,94 +97,103 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            border: 8px solid #222;
         }
         #game-svg { width: 100%; height: 100%; }
 
         #sidebar {
             grid-area: sidebar;
-            background: #121420;
-            border-left: 2px solid #000;
+            background: #111;
+            border-left: 8px solid #333;
             padding: 30px;
             display: flex;
             flex-direction: column;
             gap: 20px;
-            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
         }
 
-        .ui-box { background: #000; border-radius: 15px; padding: 25px; border: 2px solid #333; text-align: center; }
-        #dice-view { font-size: 5rem; margin-bottom: 5px; font-family: 'Fredoka One'; color: var(--highlight); }
+        .ui-box { background: #000; border: 6px solid #333; padding: 25px; text-align: center; }
+        #dice-view { font-size: 4rem; margin-bottom: 20px; font-family: 'Press Start 2P'; color: var(--highlight); }
         
         .btn { 
-            width: 100%; padding: 20px; border-radius: 15px; border: none; 
-            font-family: 'Fredoka One'; font-size: 1.3rem; cursor: pointer; transition: 0.2s;
-            background: #fff; color: #000; box-shadow: 0 6px 0 #999;
+            width: 100%; padding: 20px; border: 4px solid #fff; 
+            font-family: 'Press Start 2P'; font-size: 1rem; cursor: pointer; transition: 0.1s;
+            background: #fff; color: #000; box-shadow: 6px 6px 0px #000;
         }
-        .btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 9px 0 #999; }
-        .btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 #999; }
-        .btn:disabled { opacity: 0.2; cursor: not-allowed; }
+        .btn:hover:not(:disabled) { background: #ddd; transform: translate(-2px, -2px); box-shadow: 8px 8px 0px #000; }
+        .btn:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 2px 2px 0px #000; }
+        .btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
-        .hint { background: rgba(0,0,0,0.8); padding: 15px; border-radius: 10px; border: 2px solid var(--highlight); color: var(--highlight); font-weight: 900; text-align: center; text-transform: uppercase; font-size: 0.9rem; }
+        .hint { background: #000; padding: 15px; border: 4px solid var(--highlight); color: var(--highlight); font-family: 'Press Start 2P'; font-size: 0.7rem; text-align: center; text-transform: uppercase; }
 
-        #log { flex: 1; background: #000; border-radius: 12px; padding: 15px; overflow-y: auto; font-size: 0.82rem; color: #888; border: 1px solid #222; }
+        #log { flex: 1; background: #000; border: 4px solid #222; padding: 15px; overflow-y: auto; font-size: 0.8rem; color: #aaa; font-family: 'Silkscreen'; }
 
-        /* Game tiles (visible over the map) */
+        /* Game tiles */
         .node-tile {
-            fill: rgba(255,255,255,0.2);
-            stroke: rgba(255,255,255,0.5);
-            stroke-width: 2;
+            fill: rgba(255,255,255,0.3);
+            stroke: rgba(255,255,255,0.6);
+            stroke-width: 4;
             cursor: pointer;
-            transition: all 0.2s;
-        }
-        .node-tile:hover {
-            fill: rgba(255,255,255,0.4);
-            stroke: #fff;
-            stroke-width: 3;
         }
         .node-biome {
-            fill: rgba(255,255,255,0.1);
-            stroke: rgba(255,255,255,0.6);
-            stroke-width: 3;
+            fill: rgba(255, 255, 255, 0.1);
+            stroke: rgba(255, 255, 255, 0.4);
+            stroke-width: 6;
             cursor: pointer;
         }
         .node-start {
-            fill: rgba(255,255,255,0.05);
-            stroke: rgba(255,255,255,0.3);
-            stroke-width: 2;
-            cursor: pointer;
+            fill: rgba(255,255,255,0.1);
+            stroke: rgba(255,255,255,0.2);
+            stroke-width: 4;
         }
         .debuff-tile {
-            fill: rgba(255,50,50,0.3) !important;
-            stroke: rgba(255,50,50,0.7) !important;
-            stroke-width: 3 !important;
+            fill: rgba(255,0,0,0.6) !important;
+            stroke: #ff3300 !important;
+            stroke-width: 6 !important;
         }
 
         .target-active { 
-            stroke: #fff !important; stroke-width: 8 !important; 
-            stroke-dasharray: 10 5; animation: dashAnim 3s linear infinite; 
-            fill: rgba(255,255,255,0.5) !important;
+            stroke: #fff !important; stroke-width: 10 !important; 
+            stroke-dasharray: 8 8; animation: dashAnim 1s linear infinite; 
+            fill: rgba(255,255,255,0.6) !important;
         }
-        @keyframes dashAnim { from { stroke-dashoffset: 60; } to { stroke-dashoffset: 0; } }
+        @keyframes dashAnim { from { stroke-dashoffset: 16; } to { stroke-dashoffset: 0; } }
 
         /* Pawns */
-        .pawn-g { transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28); pointer-events: all; }
-        .pawn-visual { filter: drop-shadow(0 5px 15px rgba(0,0,0,0.8)); cursor: pointer; }
-        .pawn-jumping { animation: pawnHop 0.7s infinite alternate ease-in-out; }
-        @keyframes pawnHop { from { transform: translateY(0); } to { transform: translateY(-20px); } }
-        .pawn-selected { filter: drop-shadow(0 0 25px #fff); transform: translateY(-30px) scale(1.4); }
+        .pawn-g { transition: transform 0.4s steps(10); }
+        .pawn-visual { filter: drop-shadow(4px 4px 0px rgba(0,0,0,0.8)); cursor: pointer; }
+        .pawn-jumping { animation: pixelPop 0.4s infinite steps(2); }
+        @keyframes pixelPop { 0% { transform: translateY(0); } 100% { transform: translateY(-10px); } }
+        .pawn-selected { filter: drop-shadow(0 0 10px #fff); transform: scale(1.2); }
 
-        #win-modal { position: fixed; inset: 0; background: rgba(0,0,0,1); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; }
-        #debuff-alert { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); background: #ff0000; color: #fff; padding: 10px 20px; border-radius: 10px; font-weight: 900; display: none; animation: pop 0.5s; z-index: 2000; font-family: 'Fredoka One'; }
-        @keyframes pop { 0% { transform: translate(-50%, -20px) scale(0); } 100% { transform: translate(-50%, 0) scale(1); } }
+        #win-modal { position: fixed; inset: 0; background: #000; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; border: 20px double #fff; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
+    <div id="start-screen">
+        <h1 class="pixel-title">BIOMAS<br>EM GUERRA</h1>
+        <button class="start-btn" onclick="startGame()">START GAME</button>
+    </div>
+
     <header>
-        <div class="logo">BIOMES AT WAR</div>
-        <div id="stat-turn" style="color:var(--invader); font-weight: 900; font-size: 1.5rem;">TURN: INVADERS</div>
+        <div class="logo">BIOMAS AT WAR</div>
+        <div id="stat-turn" style="color:var(--invader); font-weight: 900; font-size: 1.2rem; font-family:'Press Start 2P'">TURN: INVADERS</div>
     </header>
 
     <div id="board-viewer">
-        <div id="debuff-alert">⚠️ DEBUFF! RETURN TO PREVIOUS TILE!</div>
+        <!-- Debuff Card Overlay -->
+        <div id="debuff-overlay" style="display:none; position:absolute; inset:0; background:rgba(255,0,0,0.6); z-index:2000; display:none; flex-direction:column; align-items:center; justify-content:center; animation: fadeIn 0.3s;">
+            <div style="background:#000; border:8px solid #fff; padding:30px; text-align:center; max-width:400px; box-shadow: 15px 15px 0px rgba(0,0,0,0.5);">
+                <h2 style="font-family:'Press Start 2P'; font-size:1.5rem; color:#ff3300; margin-bottom:20px;">PERIGO!</h2>
+                <div id="debuff-img-container" style="border:4px solid #333; margin-bottom:20px; background:#fff;">
+                    <img id="debuff-card-img" src="" style="max-width:250px; display:block;">
+                </div>
+                <p id="debuff-msg" style="font-family:'Silkscreen'; font-size:1.2rem; margin-bottom:25px;">Um inimigo natural te atrasou!</p>
+                <button class="btn" style="background:#ff3300; color:#fff;" onclick="closeDebuff()">VOLTAR</button>
+            </div>
+        </div>
+
         <svg id="game-svg" viewBox="0 0 1024 1024" preserveAspectRatio="xMidYMid meet">
             <image href="mapa.png" x="0" y="0" width="1024" height="1024" />
             <g id="lay-nodes"></g> 
@@ -157,118 +216,86 @@
     </div>
 
     <script>
-        // =========================================================
-        // MANUAL COORDINATES - PIXEL BY PIXEL WITH THE 1024x1024 MAP
-        // Now viewBox = 0 0 1024 1024 = coordinates = PNG pixels
-        // =========================================================
-
-        const CX = 510, CY = 500; // Center "Start" of the map
+        const CX = 510, CY = 500; 
 
         const BIOMAS = [
-            { id: 'CAA', n: 'Caatinga',       x: 170, y:  55 },
-            { id: 'PAN', n: 'Pantanal',        x: 755, y:  95 },
-            { id: 'CER', n: 'Cerrado',         x: 930, y: 480 },
-            { id: 'AMZ', n: 'Amazon',          x: 800, y: 880 },
-            { id: 'MAT', n: 'Atlantic Forest', x: 255, y: 895 },
-            { id: 'COS', n: 'Rocky Coast',     x:  80, y: 490 }
+            { id: 'CAA', n: 'Caatinga',       x: 170, y:  55, diff: 0.15 },
+            { id: 'PAN', n: 'Pantanal',        x: 755, y:  95, diff: 0.15 },
+            { id: 'CER', n: 'Cerrado',         x: 930, y: 480, diff: 0.15 },
+            { id: 'AMZ', n: 'Amazônia',        x: 800, y: 880, diff: 0.5 }, // Hardest
+            { id: 'MAT', n: 'Mata Atlântica',  x: 255, y: 895, diff: 0.05 }, // Easiest
+            { id: 'COS', n: 'Costa Rochosa',   x:  80, y: 490, diff: 0.15 }
         ];
 
-        // Radial trail: each sub-array = [x, y] of each brown tile
-        // from the center (Start) to the biome
         const RADS = {
-            'CAA': [
-                [478,460],[450,415],[425,370],[398,325],[370,280],[340,235],[308,188],[268,145],[218,100]
-            ],
-            'PAN': [
-                [545,465],[575,425],[608,385],[640,345],[670,305],[700,262],[722,220],[740,175],[748,132]
-            ],
-            'CER': [
-                [560,495],[610,492],[660,490],[710,488],[758,486],[808,484],[858,482],[900,480]
-            ],
-            'AMZ': [
-                [545,540],[570,585],[598,630],[625,675],[655,718],[690,760],[722,800],[760,842],[785,878]
-            ],
-            'MAT': [
-                [478,542],[448,588],[420,632],[392,678],[365,722],[338,768],[310,812],[280,855],[260,892]
-            ],
-            'COS': [
-                [462,498],[415,496],[368,494],[320,492],[272,490],[225,488],[178,486],[128,488]
-            ]
+            'CAA': [[478,460],[450,415],[425,370],[398,325],[370,280],[340,235],[308,188],[268,145],[218,100]],
+            'PAN': [[545,465],[575,425],[608,385],[640,345],[670,305],[700,262],[722,220],[740,175],[748,132]],
+            'CER': [[560,495],[610,492],[660,490],[710,488],[758,486],[808,484],[858,482],[900,480]],
+            'AMZ': [[545,540],[570,585],[598,630],[625,675],[655,718],[690,760],[722,800],[760,842],[785,878]],
+            'MAT': [[478,542],[448,588],[420,632],[392,678],[365,722],[338,768],[310,812],[280,855],[260,892]],
+            'COS': [[462,498],[415,496],[368,494],[320,492],[272,490],[225,488],[178,486],[128,488]]
         };
 
-        // Outer circular ring: tiles between each pair of biomes
         const RING = {
-            'CAA-PAN': [
-                [222,62],[278,48],[338,38],[398,35],[458,35],[518,40],[578,50],[638,62],[698,80]
-            ],
-            'PAN-CER': [
-                [790,135],[815,180],[838,228],[858,278],[875,328],[890,378],[900,428],[918,460]
-            ],
-            'CER-AMZ': [
-                [935,525],[930,575],[920,628],[905,680],[888,730],[868,778],[845,822],[820,858]
-            ],
-            'AMZ-MAT': [
-                [755,912],[700,932],[645,948],[590,955],[535,955],[480,948],[425,938],[370,922],[315,905]
-            ],
-            'MAT-COS': [
-                [215,875],[182,838],[155,795],[135,748],[118,698],[105,648],[95,598],[88,548],[82,510]
-            ],
-            'COS-CAA': [
-                [78,455],[82,405],[90,355],[102,305],[118,258],[138,212],[158,168],[175,125],[172,82]
-            ]
+            'CAA-PAN': [[222,62],[278,48],[338,38],[398,35],[458,35],[518,40],[578,50],[638,62],[698,80]],
+            'PAN-CER': [[790,135],[815,180],[838,228],[858,278],[875,328],[890,378],[900,428],[918,460]],
+            'CER-AMZ': [[935,525],[930,575],[920,628],[905,680],[888,730],[868,778],[845,822],[820,858]],
+            'AMZ-MAT': [[755,912],[700,932],[645,948],[590,955],[535,955],[480,948],[425,938],[370,922],[315,905]],
+            'MAT-COS': [[215,875],[182,838],[155,795],[135,748],[118,698],[105,648],[95,598],[88,548],[82,510]],
+            'COS-CAA': [[78,455],[82,405],[90,355],[102,305],[118,258],[138,212],[158,168],[175,125],[172,82]]
         };
 
-        // Which indices (0-based) in the circular ring are DEBUFF (red tiles)
-        const DEBUFF_AT = [2, 5, 7];
+        const DEBUFF_IMAGES = [
+            'Jararaca.certo.png', 'aranha marrom.certo.png', 'jacaré,.png',
+            'onça pintada.ceerto.png', 'sucuri.certo.png'
+        ];
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+        }
+
+        function closeDebuff() {
+            document.getElementById('debuff-overlay').style.display = 'none';
+            if (window.game) window.game.completeMove(true);
+        }
 
         class JogoEngine {
             constructor() {
-                this.turn = 'INVADER';
-                this.dice = 0;
-                this.state = 'ROLL';
-                this.nodes = {};
-                this.pawns = [];
-                this.selected = null;
-                this.dests = [];
-
-                this.buildGraph();
-                this.buildPawns();
-                this.bindUI();
-                this.refresh();
+                this.turn = 'INVADER'; this.dice = 0; this.state = 'ROLL';
+                this.nodes = {}; this.pawns = []; this.selected = null;
+                this.dests = []; this.pendingMove = null;
+                this.buildGraph(); this.buildPawns(); this.bindUI(); this.refresh();
+                window.game = this;
             }
 
             buildGraph() {
                 this.addN('START', CX, CY, 'START');
-
-                // Radiais
                 BIOMAS.forEach(b => {
-                    const pts = RADS[b.id];
-                    let prev = 'START';
+                    const pts = RADS[b.id]; let prev = 'START';
                     pts.forEach((p, i) => {
                         const id = `r-${b.id}-${i}`;
-                        this.addN(id, p[0], p[1], 'STEP');
-                        this.linkN(prev, id);
-                        prev = id;
+                        const type = (Math.random() < b.diff) ? 'DEBUFF' : 'STEP';
+                        this.addN(id, p[0], p[1], type);
+                        this.linkN(prev, id); prev = id;
                     });
                     this.addN(b.id, b.x, b.y, 'BIOME');
                     this.linkN(prev, b.id);
                 });
 
-                // Anel circular
                 Object.keys(RING).forEach(key => {
-                    const [from, to] = key.split('-');
-                    const pts = RING[key];
-                    let prev = from;
+                    const [fromId, toId] = key.split('-');
+                    const pts = RING[key]; let prev = fromId;
+                    const targetBiome = BIOMAS.find(b => b.id === toId);
+                    const ringDiff = targetBiome ? targetBiome.diff : 0.15;
+
                     pts.forEach((p, j) => {
                         const id = `c-${key}-${j}`;
-                        const type = DEBUFF_AT.includes(j) ? 'DEBUFF' : 'STEP';
+                        const type = (Math.random() < ringDiff) ? 'DEBUFF' : 'STEP';
                         this.addN(id, p[0], p[1], type);
-                        this.linkN(prev, id);
-                        prev = id;
+                        this.linkN(prev, id); prev = id;
                     });
-                    this.linkN(prev, to);
+                    this.linkN(prev, toId);
                 });
-
                 this.drawNodes();
             }
 
@@ -277,38 +304,33 @@
 
             buildPawns() {
                 for (let i = 1; i <= 3; i++) {
-                    this.pawns.push({ id: `inv${i}`, side: 'INVADER', node: 'START', color: '#ff3333', icon: '👹' });
-                    this.pawns.push({ id: `grd${i}`, side: 'GUARD', node: 'START', color: '#27ae60', icon: '🛡️' });
+                    this.pawns.push({ id: `inv${i}`, side: 'INVADER', node: 'START', color: '#ff3300', icon: '💀' });
+                    this.pawns.push({ id: `grd${i}`, side: 'GUARD', node: 'START', color: '#00ff66', icon: '🛡️' });
                 }
                 this.drawPawns();
             }
 
             drawNodes() {
                 const layer = document.getElementById('lay-nodes');
+                layer.innerHTML = '';
                 Object.values(this.nodes).forEach(n => {
                     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    g.style.cursor = 'pointer';
                     g.addEventListener('click', () => this.onNodeClick(n.id));
                     
                     if (n.type === 'STEP' || n.type === 'DEBUFF') {
                         const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                        const s = 32; // tile size
-                        r.setAttribute('x', n.x - s/2);
-                        r.setAttribute('y', n.y - s/2);
-                        r.setAttribute('width', s);
-                        r.setAttribute('height', s);
-                        r.setAttribute('rx', 5);
-                        r.setAttribute('class', 'node-tile');
-                        r.setAttribute('id', `tile-${n.id}`);
-                        if (n.type === 'DEBUFF') r.classList.add('debuff-tile');
-                        g.appendChild(r);
+                        const s = 34; 
+                        r.setAttribute('x', n.x - s / 2); r.setAttribute('y', n.y - s / 2);
+                        r.setAttribute('width', s); r.setAttribute('height', s);
+                        r.setAttribute('class', 'node-tile' + (n.type === 'DEBUFF' ? ' debuff-tile' : ''));
+                        r.setAttribute('id', `tile-${n.id}`); g.appendChild(r);
                     } else {
                         const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                        c.setAttribute('cx', n.x);
-                        c.setAttribute('cy', n.y);
-                        c.setAttribute('r', n.type === 'START' ? 70 : 45);
+                        c.setAttribute('cx', n.x); c.setAttribute('cy', n.y);
+                        c.setAttribute('r', n.type === 'START' ? 60 : 40);
                         c.setAttribute('class', n.type === 'START' ? 'node-start' : 'node-biome');
-                        c.setAttribute('id', `tile-${n.id}`);
-                        g.appendChild(c);
+                        c.setAttribute('id', `tile-${n.id}`); g.appendChild(c);
                     }
                     layer.appendChild(g);
                 });
@@ -324,75 +346,50 @@
                     const n = this.nodes[nid];
                     ps.forEach((p, idx) => {
                         const cols = Math.min(ps.length, 3);
-                        const row = Math.floor(idx / cols);
-                        const col = idx % cols;
-                        const ox = (col - (cols-1)/2) * 32;
-                        const oy = row * 35;
-                        
+                        const ox = (idx % cols - (cols - 1) / 2) * 35;
+                        const oy = Math.floor(idx / cols) * 40;
                         const mg = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                         mg.setAttribute('transform', `translate(${n.x + ox}, ${n.y + oy - 10})`);
                         mg.setAttribute('class', 'pawn-g');
 
                         const body = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        body.setAttribute('d', 'M-18,22 L18,22 L15,-10 C12,-25 0,-38 0,-38 C0,-38 -12,-25 -15,-10 Z');
-                        body.setAttribute('fill', p.color);
-                        body.setAttribute('stroke', '#fff');
-                        body.setAttribute('stroke-width', '2.5');
-                        body.setAttribute('class', 'pawn-visual');
-
+                        body.setAttribute('d', 'M-15,20 L15,20 L15,0 L10,0 L10,-10 L5,-10 L5,-20 L-5,-20 L-5,-10 L-10,-10 L-10,0 L-15,0 Z');
+                        body.setAttribute('fill', p.color); body.setAttribute('stroke', '#fff');
+                        body.setAttribute('stroke-width', '4'); body.setAttribute('class', 'pawn-visual');
                         if (this.selected === p) body.classList.add('pawn-selected');
                         if (this.state === 'PICK' && p.side === this.turn) body.classList.add('pawn-jumping');
 
-                        if (this.state === 'MOVE') {
-                            mg.style.pointerEvents = 'none';
-                        } else {
-                            mg.style.pointerEvents = 'all';
-                            mg.addEventListener('click', (e) => { e.stopPropagation(); this.onPawnClick(p); });
-                        }
-
+                        mg.addEventListener('click', (e) => { e.stopPropagation(); this.onPawnClick(p); });
                         const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        icon.setAttribute('y', -18);
-                        icon.setAttribute('text-anchor', 'middle');
-                        icon.setAttribute('font-size', '18');
-                        icon.textContent = p.icon;
-
-                        mg.appendChild(body);
-                        mg.appendChild(icon);
-                        layer.appendChild(mg);
+                        icon.setAttribute('y', -4); icon.setAttribute('text-anchor', 'middle');
+                        icon.setAttribute('font-size', '16'); icon.setAttribute('fill', '#000');
+                        icon.textContent = p.icon; mg.appendChild(body); mg.appendChild(icon); layer.appendChild(mg);
                     });
                 });
             }
 
-            bindUI() {
-                document.getElementById('roll-btn').onclick = () => this.rollDice();
-            }
+            bindUI() { document.getElementById('roll-btn').onclick = () => this.rollDice(); }
 
             async rollDice() {
                 if (this.state !== 'ROLL') return;
                 const dv = document.getElementById('dice-view');
-                const faces = ['⚀','⚁','⚂','⚃','⚄','⚅'];
-                for (let i = 0; i < 12; i++) {
-                    dv.innerText = faces[Math.floor(Math.random() * 6)];
-                    await new Promise(r => setTimeout(r, 70));
+                for (let i = 0; i < 15; i++) {
+                    dv.innerText = Math.floor(Math.random() * 6) + 1;
+                    await new Promise(r => setTimeout(r, 60));
                 }
                 this.dice = Math.floor(Math.random() * 6) + 1;
-                dv.innerText = faces[this.dice - 1];
-                this.state = 'PICK';
-                this.refresh();
+                dv.innerText = this.dice; this.state = 'PICK'; this.refresh();
             }
 
             onPawnClick(p) {
                 if (this.state !== 'PICK' || p.side !== this.turn) return;
-                this.selected = p;
-                this.findDests(p.node, this.dice);
-                if (this.dests.length === 0) { this.endTurn(); return; }
-                this.state = 'MOVE';
-                this.refresh();
+                this.selected = p; this.findDests(p.node, this.dice);
+                if (this.dests.length === 0) { this.addLog("Sem caminhos!"); this.endTurn(); return; }
+                this.state = 'MOVE'; this.refresh();
             }
 
             findDests(start, dist) {
-                this.dests = [];
-                const q = [{ id: start, d: 0, path: [start] }];
+                this.dests = []; const q = [{ id: start, d: 0, path: [start] }];
                 const found = new Set();
                 while (q.length > 0) {
                     const { id, d, path } = q.shift();
@@ -408,84 +405,64 @@
 
             onNodeClick(id) {
                 if (this.state !== 'MOVE' || !this.dests.includes(id)) return;
-                const p = this.selected;
-                const old = p.node;
-                p.node = id;
-
-                // Debuff: return to previous location
+                const p = this.selected; const old = p.node;
+                this.pendingMove = { pawn: p, from: old, to: id };
                 if (this.nodes[id].type === 'DEBUFF') {
-                    const alert = document.getElementById('debuff-alert');
-                    alert.style.display = 'block';
-                    setTimeout(() => {
-                        alert.style.display = 'none';
-                        p.node = old;
-                        this.drawPawns();
-                    }, 1500);
-                }
+                    const img = DEBUFF_IMAGES[Math.floor(Math.random() * DEBUFF_IMAGES.length)];
+                    document.getElementById('debuff-card-img').src = img;
+                    document.getElementById('debuff-overlay').style.display = 'flex';
+                } else { this.completeMove(); }
+            }
 
-                // Capture rival if on the same tile
-                const rival = this.pawns.find(x => x.node === id && x.side !== p.side && x !== p);
-                if (rival && id !== 'START') {
-                    this.pawns = this.pawns.filter(x => x !== rival);
-                    this.addLog('Captured an opponent!');
-                }
+            completeMove(failed = false) {
+                const m = this.pendingMove;
+                if (!failed) { m.pawn.node = m.to; this.checkCaptures(m.to, m.pawn); }
+                else { this.addLog("Perigo ambiental! Voltou à casa anterior."); }
+                this.pendingMove = null; this.endTurn();
+            }
 
-                this.endTurn();
+            checkCaptures(id, p) {
+                const rivals = this.pawns.filter(x => x.node === id && x.side !== p.side);
+                if (rivals.length > 0 && id !== 'START') {
+                    this.pawns = this.pawns.filter(x => !rivals.includes(x));
+                    this.addLog(`Capturou ${rivals.length} oponente(s)!`);
+                }
             }
 
             endTurn() {
                 this.turn = this.turn === 'INVADER' ? 'GUARD' : 'INVADER';
-                this.state = 'ROLL';
-                this.selected = null;
-                this.dests = [];
-                this.refresh();
-                this.checkWin();
+                this.state = 'ROLL'; this.selected = null; this.dests = [];
+                this.refresh(); this.checkWin();
             }
 
             refresh() {
                 document.getElementById('roll-btn').disabled = (this.state !== 'ROLL');
-
                 const turnEl = document.getElementById('stat-turn');
                 turnEl.innerText = this.turn === 'INVADER' ? 'TURN: INVADERS' : 'TURN: GUARDIANS';
                 turnEl.style.color = this.turn === 'INVADER' ? 'var(--invader)' : 'var(--guardian)';
-
                 const hint = document.getElementById('game-hint');
-                if (this.state === 'ROLL') hint.innerText = "ROLL THE DICE";
-                else if (this.state === 'PICK') hint.innerText = "CLICK ON THE JUMPING PAWN";
-                else hint.innerText = "CLICK ON THE GLOWING TILE";
-
-                // Highlight destinations
+                hint.innerText = this.state === 'ROLL' ? "ROLE O DADO!" : (this.state === 'PICK' ? "ESCOLHA A PEÇA!" : "ESCOLHA O DESTINO!");
                 document.querySelectorAll('.node-tile, .node-biome, .node-start').forEach(el => el.classList.remove('target-active'));
-                this.dests.forEach(id => {
-                    const el = document.getElementById(`tile-${id}`);
-                    if (el) el.classList.add('target-active');
-                });
-
+                this.dests.forEach(id => document.getElementById(`tile-${id}`)?.classList.add('target-active'));
                 this.drawPawns();
             }
 
             addLog(msg) {
                 const log = document.getElementById('log');
-                const div = document.createElement('div');
-                div.style.padding = '4px 0';
-                div.style.color = '#78e08f';
-                div.innerText = `> ${msg}`;
+                const div = document.createElement('div'); div.style.padding = '8px 0';
+                div.style.borderBottom = '1px solid #222'; div.innerText = `> ${msg}`;
                 log.prepend(div);
             }
 
             checkWin() {
                 const guards = this.pawns.filter(x => x.side === 'GUARD').length;
                 const invaders = this.pawns.filter(x => x.side === 'INVADER').length;
-                if (invaders === 0) this.showWin("GUARDIANS WON!");
-                if (guards === 0) this.showWin("INVADERS WON!");
-            }
-
-            showWin(txt) {
-                document.getElementById('win-txt').innerText = txt;
-                document.getElementById('win-modal').style.display = 'flex';
+                if (invaders === 0 || guards === 0) {
+                    document.getElementById('win-txt').innerText = invaders === 0 ? "GUARDIANS WON!" : "INVADERS WON!";
+                    document.getElementById('win-modal').style.display = 'flex';
+                }
             }
         }
-
         window.onload = () => new JogoEngine();
     </script>
 </body>
